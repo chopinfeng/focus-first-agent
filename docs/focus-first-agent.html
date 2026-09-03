@@ -162,7 +162,7 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
 
 <main>
 <header>
-  <div class="eyebrow">两轮调研 + 框架设计 + 验证方案 · v0.2 · 2026-09-03</div>
+  <div class="eyebrow">两轮调研 + 框架设计 + 验证方案 · v0.3 · 2026-09-03</div>
   <h1 style="margin-top:10px">Focus-First Agent Framework</h1>
   <p class="lede">一个把<strong>人的注意力</strong>当作最稀缺调度资源的 Agent 框架。Agent 的断点不是人的断点，这个框架负责把两者对齐，并像告警工程那样治理打断的速率与分布。</p>
 
@@ -541,7 +541,7 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
 <tr><td>Trust ledger</td><td>证据计数；不对称降级；双向监测；晋升通知可撤回；拒绝带原因；治理记录责任人；反橡皮章与退化信号审计</td><td>—</td></tr>
 <tr><td>EvidencePacket</td><td>首屏意图差异 + verifier + 什么能证明我错了；历史通过率；架构级理解签字</td><td>人审每一行（拒绝）；完全不看代码（仅 P3 允许）；行内评论回流（延后 P2）</td></tr>
 <tr><td>Surfaces</td><td>dark cockpit；自治面板与 slider；per-request 反馈；对齐 OS 打断等级</td><td>Critical 穿透静音（仅 Warning 且预授权）</td></tr>
-<tr><td>Benchmark</td><td>ACS 拆三项 + Pareto；Fan-out；point of no return 与 wasted compute；模拟人橡皮章参数实证化；非合作 persona；Saber 三类陷阱 + Late-Refusal；监督退化指标；模拟器验证协议（Co-Gym）；oracle 用 EVPI 定义</td><td>—</td></tr>
+<tr><td>Benchmark</td><td>ACS 拆三项 + Pareto；Fan-out；point of no return 与 wasted compute；模拟人橡皮章参数实证化；非合作 persona；Saber 三类陷阱 + Late-Refusal；监督退化指标；模拟器验证协议（Co-Gym）；oracle 用 EVPI 定义。<strong>v0.3</strong>：Attention per Task 对齐 cost per task；反事实回放的价值层与 ROA</td><td>—</td></tr>
 </table></div>
 
 <h2 id="usecases">最终 Use case</h2>
@@ -580,7 +580,33 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
 </div>
 
 <h2 id="bench">AttentionBench</h2>
-<p>SWE-bench 测 Agent 能否完成任务，METR 测总时长，τ²-bench 与 Collaborative Gym 测与模拟用户协作的成功率，Saber 与 AgentDojo 测能否抵抗陷阱。没有一个把打断次数与时机、人读写的负担、监督退化当作一等被测量。AttentionBench 把注意力本身当作被测对象，并复用上述 benchmark 的组件。</p>
+<p>SWE-bench 测 Agent 能否完成任务，METR 测总时长，τ²-bench 与 Collaborative Gym 测与模拟用户协作的成功率，Saber 与 AgentDojo 测能否抵抗陷阱。没有一个把打断次数与时机、人读写的负担、监督退化当作一等被测量，更没有一个回答"这些注意力换回了什么"。AttentionBench 把注意力本身当作被测对象，复用上述 benchmark 的组件，报告版式对齐 Artificial Analysis。</p>
+
+<h3>头条指标：Attention per Task</h3>
+<p>Artificial Analysis 的 cost per task 把 input、cached、output token 乘以单价，按 benchmark 权重加权，再除以任务数。Attention per Task 做同样的事，只是把 token 换成人的分钟，把单价换成不同状态下一次打断的价格。</p>
+<div class="tbl"><table>
+<tr><th>Artificial Analysis</th><th>AttentionBench</th><th>说明</th></tr>
+<tr><td>input tokens</td><td>读分钟：headline、context、展开的证据</td><td>人要吸收的信息</td></tr>
+<tr><td>output tokens</td><td>写分钟：自定义回答、拒绝原因、评论</td><td>人要产出的信息</td></tr>
+<tr><td>cached tokens</td><td>账本消化的决策：被信任账本、规则或计划批准直接解决、未上浮</td><td>零成本复用，框架的缓存命中率</td></tr>
+<tr><td>单价</td><td>状态单价：FOCUS 12、细断点 5、中断点 2、粗断点 1、离线推送 3 分钟/次</td><td>同一次打断在不同状态下价格不同</td></tr>
+<tr><td>cost to run the index</td><td>attention to run the bench：跑完 30 个任务人共花的小时数</td><td></td></tr>
+<tr><td>intelligence vs cost 散点</td><td>task success vs APT 散点，加 ROA vs APT 第二图</td><td>Pareto 前沿</td></tr>
+</table></div>
+<pre><code>APT      = Σ w_task × AttentionCost(task) / Σ w_task      <span class="c">// 加权分钟/任务；任务权重 P0 15% · P1 30% · P2 40% · P3 15%</span>
+APT_raw  = 同上，但用原始时钟分钟
+VPT      = Σ 有价值请求避免的损失(分钟) / 任务数
+ROA      = VPT / APT                                      <span class="c">// 每 1 分钟注意力换回多少分钟的损失避免</span></code></pre>
+
+<h3>价值层：注意力换回了什么</h3>
+<p>一次打断的价值等于有人参与的结果减去 Agent 按默认走的结果。任务集有 ground truth，所以每条上浮的请求都能做反事实回放：用同一种子跑"人的实际回答"和"Agent 默认项"两条分支，差值按公开的损失折算表换成分钟，再归入四类。</p>
+<div class="grid2">
+  <div class="card"><h4>有价值</h4><p>回答改变了结果：避免了失败、伤害或返工。价值等于避免的损失。多条请求之间用顺序消融归因，避免重复计数。</p></div>
+  <div class="card"><h4>冗余</h4><p>回答与默认相同，且默认本来就对。价值为零，成本照计。这一类的占比就是 ask precision 的反面，baseline 里大多数审批属于此类。</p></div>
+  <div class="card"><h4>迟到</h4><p>已过 point of no return，回答改变不了结果。价值为零，同时计入晚问指标。</p></div>
+  <div class="card"><h4>有害</h4><p>问了反而更糟：人被拉出专注后秒批了错误项，或等待导致超时。负价值。橡皮章模式下这一类会上升。</p></div>
+</div>
+<p>由此得到 ask precision（上浮的请求里有价值的占比）、ask recall（默认会错的决策被及时问到的占比）、silent value（不问且默认正确所省下的成本）和 ledger hit rate。反事实测不到的三种价值用探针补：SAGAT 情境意识探针（随机冻结，问人 Agent 在做什么、下一步、最大风险），接管测试（随机终止 Agent，测人多久能正确接续，对应认知负债批评），复利曲线（同一动作类在连续任务里上浮次数的斜率）。</p>
 <h3>被测配置</h3>
 <div class="tbl"><table>
 <tr><th>配置</th><th>说明</th></tr>
@@ -602,6 +628,10 @@ ACS        = (Interrupt + Read + Write + Rebuild + Repeat + Late) / 同式(oracl
 <h3>阶段目标</h3>
 <div class="tbl"><table>
 <tr><th>指标</th><th>baseline-default（预期）</th><th>ffa-p0</th><th>ffa-p2</th></tr>
+<tr><td>APT（加权分钟/任务）</td><td class="num">60–150</td><td class="num">≤ 35</td><td class="num">≤ 20</td></tr>
+<tr><td>ROA</td><td class="num">0.2–0.5</td><td class="num">≥ 1</td><td class="num">≥ 2</td></tr>
+<tr><td>ask precision</td><td class="num">≈ 10%</td><td class="num">≥ 40%</td><td class="num">≥ 60%</td></tr>
+<tr><td>ledger hit rate</td><td class="num">0</td><td class="num">≥ 30%</td><td class="num">≥ 60%</td></tr>
 <tr><td>ACS</td><td class="num">5–8</td><td class="num">≤ 3</td><td class="num">≤ 1.8</td></tr>
 <tr><td>FOCUS 中上浮占比</td><td class="num">≈ 60%</td><td class="num">≤ 15%</td><td class="num">≤ 5%</td></tr>
 <tr><td>每任务上浮数</td><td class="num">10–70</td><td class="num">≤ 4</td><td class="num">≤ 2</td></tr>
@@ -613,7 +643,7 @@ ACS        = (Interrupt + Read + Write + Rebuild + Repeat + Late) / 同式(oracl
 <tr><td>Agent 因等人停滞</td><td>高</td><td class="num">−50%</td><td class="num">−80%</td></tr>
 <tr><td>每成功任务的人力分钟</td><td>参考</td><td class="num">−40%</td><td class="num">−60%</td></tr>
 </table></div>
-<p>协议：每配置 30 任务 × 3 主策略 × 3 非合作 persona × 3 种子；报告中位数与 95% bootstrap 置信区间，主图 Pareto，第二图以人类专家耗时为横轴的 METR 风格曲线；CI 跑 6 任务 smoke 子集，主指标劣化超过 10% 或 Warning 占比超过 10% 阻断合并。真人评估用于校准并验证模拟人，目标是 ACS 与 NASA-TLX 的 Spearman 相关 ≥ 0.6。</p>
+<p>协议：每配置 30 任务 × 3 主策略 × 3 非合作 persona × 3 种子；报告是 Artificial Analysis 式榜单表（success、APT、读写打断拆分、ledger hit rate、VPT、ROA、precision、recall、陷阱阻止率），主图 success vs APT 散点加 Pareto 前沿，第二图 ROA vs APT，第三图以人类专家耗时为横轴的 METR 风格曲线，损失折算表随报告公开并做 ±50% 敏感性分析；CI 跑 6 任务 smoke 子集，主指标劣化超过 10% 或 Warning 占比超过 10% 阻断合并。真人评估用于校准并验证模拟人，目标是 ACS 与 NASA-TLX 的 Spearman 相关 ≥ 0.6。</p>
 
 <h2 id="sources">来源</h2>
 <h4>打断科学与人因学</h4>
@@ -686,6 +716,8 @@ ACS        = (Interrupt + Read + Write + Rebuild + Repeat + Late) / 同式(oracl
 <li><a href="https://waxell.ai/blog/ai-agent-approval-workflows">waxell, approval workflows</a></li>
 <li><a href="https://changkun.de/blog/ideas/human-in-the-loop-agents/">Changkun, Confirmation Fatigue</a></li>
 <li><a href="https://docs.cline.bot/features/auto-approve">Cline auto-approve</a></li>
+<li><a href="https://artificialanalysis.ai/methodology">Artificial Analysis methodology（cost per task）</a></li>
+<li><a href="https://artificialanalysis.ai/articles/artificial-analysis-intelligence-index-v4-1">Artificial Analysis Intelligence Index v4.1</a></li>
 </ul>
 <h4>产品与框架（第一轮）</h4>
 <ul class="sources">

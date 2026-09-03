@@ -116,3 +116,20 @@ v0.1 的骨架（AR 统一 schema、内核四模块、异常收件箱、证据�
 11. "问"计正向价值 + over-asking penalty；oracle 用 EVPI 停问准则定义
 12. Harness 复用 Collaborative Gym 的异步事件框架
 13. 新增指标：优先级分布（目标 80/15/5）、standing 数、并发未处理 Warning/Caution（> 3 视为缺陷）、chattering 数、理解签字数、per-class 批准率、投递漏斗
+
+---
+
+# v0.3 增补（Benchmark 价值层与 Attention per Task）
+
+**动因**：v0.2 的指标几乎全在测"消耗了多少"，不回答"值不值"。用户提出参照 Artificial Analysis 的 cost per task 构建 attention per task。
+
+| # | 内容 | 决定 |
+|---|---|---|
+| V1 | **Attention per Task（APT）**：按任务权重加权、按状态单价加权的人的分钟/任务；配套 APT_raw 与 "attention to run the bench" | 采纳，作为 benchmark 头条指标 |
+| V2 | token 类型映射：读分钟 ↔ input、写分钟 ↔ output、账本消化的决策 ↔ cached、状态单价 ↔ token 单价 | 采纳，报告按此拆分 |
+| V3 | **价值层**：逐条反事实回放（人的回答 vs Agent 默认），AR 分为有价值 / 冗余 / 迟到 / 有害，顺序消融归因 | 采纳 |
+| V4 | 指标：VPT、**ROA = VPT / APT**、ask_precision、ask_recall、silent_value、harmful_ask_rate、ledger_hit_rate | 采纳 |
+| V5 | 损失折算表（价值与成本同单位）公开并做 ±50% 敏感性分析 | 采纳 |
+| V6 | 反事实测不到的价值用探针：SAGAT 情境意识、接管测试、复利曲线 | 采纳 |
+| V7 | 报告版式对齐 AA：榜单表 + success vs APT 散点 + ROA vs APT + APT 堆叠拆分 | 采纳 |
+| V8 | 任务标注新增 `agent_default` 与 `loss_if_default` | 采纳 |
