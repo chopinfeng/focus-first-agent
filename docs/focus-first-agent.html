@@ -152,6 +152,7 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
     <li><a href="#metrics">指标</a></li>
     <li><a href="#risks">风险</a></li>
     <li><a href="#roadmap">路线图</a></li>
+    <li><a href="#v02">v0.2 调整</a></li>
     <li><a href="#usecases">Use case</a></li>
     <li><a href="#testing">测试方案</a></li>
     <li><a href="#bench">AttentionBench</a></li>
@@ -161,9 +162,9 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
 
 <main>
 <header>
-  <div class="eyebrow">调研 + 框架设计 + 验证方案 · v0.1 · 2026-09-03</div>
+  <div class="eyebrow">两轮调研 + 框架设计 + 验证方案 · v0.2 · 2026-09-03</div>
   <h1 style="margin-top:10px">Focus-First Agent Framework</h1>
-  <p class="lede">一个把<strong>人的注意力</strong>当作最稀缺调度资源的 Agent 框架。Agent 的断点不是人的断点，这个框架负责把两者对齐。</p>
+  <p class="lede">一个把<strong>人的注意力</strong>当作最稀缺调度资源的 Agent 框架。Agent 的断点不是人的断点，这个框架负责把两者对齐，并像告警工程那样治理打断的速率与分布。</p>
 
   <div class="exhibit">
     <div class="inbox" aria-label="异常收件箱示例">
@@ -176,7 +177,7 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
         </div>
       </div>
       <div class="item">
-        <span class="kind">approval · P1 · 不可逆</span>
+        <span class="kind">Caution · approval · P1 · 不可逆 · input</span>
         <div class="ttl">TTL 3h 41m<br>无回应 → 保留</div>
         <div class="headline">要删除 3 个 2023 年的 migration 文件</div>
         <div class="ctx">
@@ -190,10 +191,10 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
           <span class="opt"><kbd>2</kbd>保留并加 deprecated 注释</span>
           <span class="opt"><kbd>3</kbd>任务结束时再问</span>
         </div>
-        <div class="fallback">推荐项置信度 0.8 · 本任务打断预算 1/2 · 已延迟到你的断点（PR #812 刚提交）</div>
+        <div class="fallback">为何现在问：下一步 schema 变更依赖此决定 · 已延迟到你的粗断点（PR #812 刚提交）· 本小时上浮 2/6 · <a href="#ar">展开证据</a></div>
       </div>
     </div>
-    <div class="cap">框架的最小可见单元：一条 AttentionRequest 在收件箱中的样子。人看到的是"为什么需要我、不答会怎样、按哪个键"，而不是 transcript。</div>
+    <div class="cap">框架的最小可见单元：一条 AttentionRequest 在收件箱中的样子。人看到的是"为什么需要我、为何是现在、不答会怎样、按哪个键"，证据可展开，而不是 transcript。</div>
   </div>
 </header>
 
@@ -204,6 +205,7 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
   <li><strong>打断是效用计算，不是默认行为。</strong>自主执行、发起对话、什么都不做，三者由"推迟代价 vs 打断代价"决定，并随人的状态变化（Horvitz 1999/2003）。</li>
   <li><strong>可逆性比风险等级更有杠杆。</strong>生产环境仅 0.8% 的动作不可逆（Anthropic）；可逆动作应当直接做并记录回滚点，用事后审计替代事前审批。</li>
   <li><strong>人看结论和证据，不看过程。</strong>子 Agent 只返回蒸馏结论、diff-first、预览优先，是所有成熟产品收敛出的同一原则。</li>
+  <li><strong>打断要像告警一样治理。</strong>过程控制、航空、医疗和 SRE 早就给出了速率上限、优先级分布、阶段抑制与自动召回、抖动检测这些规则，v0.2 直接沿用。</li>
 </ul>
 
 <h2 id="research">调研发现</h2>
@@ -256,10 +258,13 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
 <div class="tbl"><table>
 <tr><th>目标</th><th>指标</th><th>起点</th><th>目标值</th></tr>
 <tr><td>少打断</td><td>每任务人工干预次数</td><td class="num">5.4（Anthropic 内部）</td><td class="num">≤ 2</td></tr>
-<tr><td>打断有意义</td><td>橡皮章率：3 秒内批准的占比</td><td class="num">≈ 93% 一律批准</td><td>收件箱项 ≥ 60% 被认真处理</td></tr>
-<tr><td>不淹没</td><td>每日主动上浮条数</td><td>无上限</td><td class="num">≤ 5</td></tr>
+<tr><td>打断有节奏</td><td>上浮速率（滚动窗口）</td><td>无上限</td><td class="num">≤ 1 / 10 min，≤ 6 / h</td></tr>
+<tr><td>打断有意义</td><td>橡皮章率：3 秒内批准的占比</td><td class="num">≈ 93% 一律批准</td><td class="num">&lt; 50%</td></tr>
+<tr><td>升级率合理</td><td>进入人工决策的动作占比</td><td class="num">100% 或 0%</td><td class="num">10–15%</td></tr>
+<tr><td>分布健康</td><td>Warning / Caution / Advisory 占比</td><td>无</td><td class="num">≈ 5 / 15 / 80</td></tr>
 <tr><td>恢复快</td><td>每次请求的交互时间 IT</td><td>需重建上下文</td><td class="num">中位数 ≤ 90 秒</td></tr>
-<tr><td>人不过载</td><td>人的利用率</td><td>未测</td><td class="num">&lt; 70%</td></tr>
+<tr><td>人不过载</td><td>人的利用率；待处理线程数</td><td>未测</td><td class="num">&lt; 70%；≤ 4</td></tr>
+<tr><td>不失去理解</td><td>架构级变更的理解签字覆盖率</td><td class="num">0</td><td class="num">100%</td></tr>
 <tr><td>只审高风险</td><td>需人工 review 的交付占比</td><td class="num">100%</td><td class="num">≈ 20%，覆盖 ≈ 70% 风险</td></tr>
 <tr><td>不漏危险</td><td>P0 不可逆动作被自动放行</td><td>—</td><td class="num">0</td></tr>
 </table></div>
@@ -340,84 +345,113 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
 <div class="tbl"><table>
 <tr><th>抽象</th><th>是什么</th><th>填补的空白</th></tr>
 <tr><td><strong>TaskCard</strong></td><td>委派时一次写清：goal、scope、constraints、done_criteria、risk_class，以及一份 <em>attention_contract</em>（本任务打断预算、deadline、允许渠道、拿不准时是"推荐并继续"还是"问并等"）。</td><td>#7、#8</td></tr>
-<tr><td><strong>AttentionRequest</strong></td><td>框架的"系统调用"。任何 SDK 的 interrupt、approval、elicitation、notification 都先翻译成它。</td><td>#1</td></tr>
+<tr><td><strong>AttentionRequest</strong></td><td>框架的"系统调用"。任何 SDK 的 interrupt、approval、elicitation、notification 都先翻译成它，且必须通过准入门槛：说清人要做什么、不做会怎样、多久后失去选择权。</td><td>#1</td></tr>
 <tr><td><strong>AttentionKernel</strong></td><td>Policy、Scheduler、Budget、Timeout 四个子模块，按顺序处理每个 AR。</td><td>#2、#3、#5、#8</td></tr>
-<tr><td><strong>HumanStateModel</strong></td><td>本地推断四态 FOCUS / BREAKPOINT / IDLE / AWAY。信号：键鼠活跃度、前台应用、日历、显式 <code>/focus</code>、上次打开收件箱时间。只输出枚举，不存原始活动。</td><td>#8</td></tr>
-<tr><td><strong>EvidencePacket</strong></td><td>任务收尾唯一交付物：结论、变更摘要、验证证据、风险标签、我做的假设、未决问题、回滚方式。由独立 verifier 子 Agent 打标签。</td><td>#7</td></tr>
-<tr><td><strong>AttentionLedger</strong></td><td>每个 AR 的生命周期：发出、投递时的状态与渠道、结果、耗时。同时是信任账本和指标源。</td><td>#4</td></tr>
+<tr><td><strong>HumanStateModel</strong></td><td>四态 FOCUS / BREAKPOINT / IDLE / AWAY，断点分 fine / medium / coarse 三粒度。默认靠自报、日历 focus block 和收件箱活动；键鼠推断是 opt-in，本地计算，只输出枚举。</td><td>#8</td></tr>
+<tr><td><strong>EvidencePacket</strong></td><td>任务收尾唯一交付物。首屏是意图与 spec 的差异、verifier 结论与历史通过率、"什么能证明我错了"、风险标签、回滚方式；diff 折叠。架构级变更需要人的理解签字。</td><td>#7</td></tr>
+<tr><td><strong>AttentionLedger</strong></td><td>每个 AR 的生命周期：发出、投递四态、结果、停留时长。同时是信任账本、监督退化监测器和指标源。</td><td>#4</td></tr>
 </table></div>
 
 <h3 id="ar">AttentionRequest schema</h3>
 <pre><code>{
   "id": "ar_01J…", "task_id": "t_42", "agent_id": "claude-code:worktree-3",
+  <span class="k">"supersedes_id"</span>: null,           <span class="c">// 重试复用同一收件箱条目</span>
   <span class="k">"kind"</span>: "approval",              <span class="c">// notify | question | approval | review | escalation</span>
-  <span class="k">"headline"</span>: "要删除 3 个旧 migration 文件，不可逆",   <span class="c">// ≤ 120 字符：为什么需要你</span>
-  <span class="k">"context"</span>: {                     <span class="c">// 恢复上下文，消除注意力残留</span>
+  <span class="k">"decision_class"</span>: "input",       <span class="c">// goal | input | constraint | taste；goal/taste 无视风险必问人</span>
+  <span class="k">"headline"</span>: "要删除 3 个旧 migration 文件，不可逆",   <span class="c">// ≤ 120 字符，写对人的影响，不写原因</span>
+  <span class="k">"required_action"</span>: "选择删除或保留",                <span class="c">// 准入必填</span>
+  <span class="k">"consequence_if_ignored"</span>: "30 分钟后按保留处理，CI 多跑 12 分钟",
+  <span class="k">"time_to_irreversible"</span>: "PT30M",  <span class="c">// 准入必填：多久后失去选择权</span>
+  "point_of_no_return": "step-5",  <span class="c">// input 类：晚于此步再问已无价值</span>
+  <span class="k">"context"</span>: {                     <span class="c">// 首屏 4 行，消除注意力残留</span>
     "you_were": "在 review PR #812",
     "i_did":    "迁移了 auth 路由，测试 41/41 通过",
     "i_need":   "确认能否删除 2023 年的 3 个 migration",
     "blast_radius": "db/migrations/2023_*.sql，影响本地与 CI，不影响生产"
   },
-  <span class="k">"options"</span>: [
+  "why_now": "下一步的 schema 变更依赖此决定",
+  <span class="k">"proof"</span>: [                       <span class="c">// 可展开的可验证证据；信心 ≠ 准确率</span>
+    { "type": "test_log", "ref": "log://test-run-88", "summary": "41/41 passed" },
+    { "type": "diff",     "ref": "diff://…", "summary": "6 files +212 −40" }
+  ],
+  "what_would_prove_me_wrong": "若任何环境仍引用 2023 schema 版本号",
+  "options": [
     { "id": "delete", "label": "删除", "recommended": true, "consequence": "CI 需重新跑 12 min" },
     { "id": "keep",   "label": "保留并加 deprecated 注释" },
     { "id": "later",  "label": "先跳过，任务结束时再问" }
   ],
-  <span class="k">"default"</span>: { "option_id": "keep", "apply_after": "PT30M" },   <span class="c">// 无人回应时的安全默认</span>
-  <span class="k">"risk"</span>: { "level": "P1", "reversible": false, "scope": ["fs"] },
-  <span class="k">"urgency"</span>: "soon",               <span class="c">// now | soon | whenever</span>
-  "cost_estimate": { "interaction_seconds": 40 },
-  "confidence": 0.8,               <span class="c">// Agent 对推荐项的置信度</span>
-  <span class="k">"ttl"</span>: "PT4H", <span class="k">"on_expire"</span>: "apply_default",   <span class="c">// apply_default | block | escalate</span>
-  <span class="k">"batch_key"</span>: "fs.delete:db/migrations",        <span class="c">// 同 key 合并成一次决策</span>
-  "evidence": ["diff://…", "log://test-run-88"]
+  "default": { "option_id": "keep", "apply_after": "PT30M" },   <span class="c">// 仅 Advisory 级允许</span>
+  "risk": { "level": "P1", "reversible": false, "effects": ["fs.delete"] },  <span class="c">// 按效果分类，不按命令字符串</span>
+  "urgency": "soon",               <span class="c">// now | soon | whenever</span>
+  <span class="k">"confirm_delay"</span>: "PT60S",        <span class="c">// 发出前等待，自愈即撤回</span>
+  "confidence": 0.8,               <span class="c">// 只排序推荐项，不影响 ask/act</span>
+  "ttl": "PT4H",
+  <span class="k">"on_expire"</span>: "apply_default",    <span class="c">// 强制枚举：apply_default | skip_and_continue | end_task | escalate；P0 仅后两者</span>
+  "batch_key": "fs.delete:db/migrations",
+  "deep_link": "ffa://task/t_42/ar/ar_01J…",
+  "delivery": { "state": "displayed", "channel": "inbox" }   <span class="c">// sent | delivered | displayed | responded</span>
 }</code></pre>
-<p>高亮字段是现有框架中集体缺席的：<code>default</code> 与 <code>on_expire</code> 保证永不无限阻塞，<code>batch_key</code> 让 12 次文件写入变成一次批准，<code>context</code> 四行让人不必回忆自己在做什么。</p>
+<p>高亮字段里，准入三项和 <code>on_expire</code> 枚举来自告警工程与 Zapier 的先例，<code>decision_class</code> 来自"何时该问"研究与设计师的批评，<code>proof</code> 来自"信心不等于准确率"的实验结果。它们在现有框架中集体缺席。</p>
 
 <h2 id="policy">决策策略：ask vs act</h2>
 <p>评估顺序借鉴 Claude Agent SDK 的六步权限模型，加入账本和效用两层：</p>
-<pre><code>硬 deny 规则 → 硬 ask 规则 → 信任账本（自动放行 / 自动拒绝） → 效用计算 → 分类器兜底 → 默认 ask</code></pre>
+<pre><code>准入门槛 → 硬 deny → 硬 ask → decision_class（goal/taste 必问） → 信任账本 → 效用计算 → 分类器兜底 → 默认 ask</code></pre>
+<p>Agent 不自评是否需要打扰人；动作类按效果分类（写入路径、网络出口、进程、凭据、不可逆性），链式命令和脚本拼装按最终效果算一个动作，字符串规则只作补充。</p>
 
-<h3>风险 × 可逆性矩阵</h3>
+<h3>三轴矩阵与告警级别</h3>
 <div class="tbl"><table class="matrix">
 <tr><th></th><th>可逆</th><th>不可逆</th></tr>
-<tr><td><strong>范围内，低爆炸半径</strong></td><td><span class="tag act">ACT</span> 记录回滚点，进 digest</td><td><span class="tag ask">ASK</span> 带安全默认，延迟到断点，可合并</td></tr>
-<tr><td><strong>范围外或外部副作用</strong></td><td><span class="tag act">ACT</span> + <span class="tag n">notify(soon)</span></td><td><span class="tag ask">ASK(now)</span> 阻塞，超时升级</td></tr>
-<tr><td><strong>P0：生产、资金、删除、对外发消息</strong></td><td><span class="tag ask">ASK(now)</span></td><td><span class="tag block">ASK(now)</span> 不可设默认放行，超时即 block</td></tr>
+<tr><td><strong>范围内，低爆炸半径</strong></td><td><span class="tag act">ACT</span> 记录回滚点，进 digest</td><td><span class="tag ask">Caution · soon</span> 带默认，延迟到断点，可合并</td></tr>
+<tr><td><strong>范围外或外部副作用</strong></td><td><span class="tag act">ACT</span> + <span class="tag n">Advisory notify</span></td><td><span class="tag ask">Caution · now</span> 阻塞，超时升级</td></tr>
+<tr><td><strong>P0：生产、资金、删除、对外发消息</strong></td><td><span class="tag ask">Caution · now</span></td><td><span class="tag block">Warning</span> consent + push + 第二人；不可设默认；超时 = end_task 或 escalate</td></tr>
+<tr><td><strong>decision_class = goal 或 taste</strong></td><td colspan="2"><span class="tag ask">至少 Caution</span> 无视上两轴；goal 应在计划期问完，执行期出现计为 spec 缺陷</td></tr>
 </table></div>
+
+<h3>三级告警与自治模式</h3>
+<div class="tbl"><table>
+<tr><th>级别</th><th>触发</th><th>自治模式</th><th>渠道</th><th>OS 打断等级</th></tr>
+<tr><td><span class="tag block">Warning</span></td><td>now + P0，或不可逆 + 外部</td><td>consent：必须批准</td><td>push + 收件箱 + 第二人</td><td>Time-Sensitive；Critical 需预授权</td></tr>
+<tr><td><span class="tag ask">Caution</span></td><td>now + P1；soon + P0/不可逆；goal/taste</td><td>consent</td><td>收件箱 + 周边</td><td>Active</td></tr>
+<tr><td><span class="tag n">Advisory</span></td><td>其余</td><td>exception：TTL 内可否决，超时按默认执行，进"已替你决定"队列</td><td>周边 / digest</td><td>Passive</td></tr>
+</table></div>
+<p>这是 Sheridan 的 management by consent 与 by exception，绑定到 FAA 飞行甲板告警的三级。"安全默认"只存在于 Advisory。</p>
 
 <h3>效用计算</h3>
 <pre><code>surface_now  if  P(need_human) × Cost(wrong)  &gt;  Cost(interrupt | state) + Cost(resume)
 defer        if  上式不成立 且 存在安全默认
 act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></pre>
-<p>打断成本随状态取值：FOCUS 取 Parnin 的 10 到 15 分钟量级，BREAKPOINT 取 1 到 2 分钟，AWAY 取渠道成本。阈值按（用户，动作类）从账本学习。</p>
+<p>效用计算只决定 Advisory 与 Caution-soon 的投递时机。打断成本随状态取值：FOCUS 取 12 分钟量级，粗断点 1 分钟，中断点 2 分钟，细断点 5 分钟，AWAY 取渠道成本。Kernel 按动作类输出批准率：高于 90% 建议放宽，低于 70% 建议收紧或改进 spec；系统级升级率目标 10 到 15%。</p>
 
-<h3>信任账本升级规则</h3>
+<h3>信任账本（v0.2 重做）</h3>
 <ul>
-  <li>键是（用户，动作类），例如 <code>fs.write:src/**</code>、<code>shell:pnpm test</code>、<code>git.push:feature/*</code>。</li>
-  <li>连续 10 次 approve 且 0 次 undo，自动升为 auto_allow，并在 digest 里告知"已自动放行，可撤销"。</li>
-  <li>任何一次 reject 或 undo 立即降级并重置计数。</li>
-  <li>P0 动作类永不自动放行。账本对用户可见可编辑，一行命令回到"全部询问"。</li>
+  <li><strong>计数单位是证据，不是批准。</strong>某动作类累计 10 次"verifier 通过 + 可撤销 + 未被 undo"才晋升。</li>
+  <li><strong>不对称。</strong>一次 undo、override 或 verifier 失败即降两级并重置。晋升后若该类的打断率或回滚率上升，自动降级。</li>
+  <li><strong>晋升可见可撤回。</strong>晋升以 Advisory 通知，一键撤回；账本本身是可编辑的 allowlist；阈值修改记录责任人，Agent 不能自改。</li>
+  <li><strong>拒绝带教训。</strong>每次 reject 要求一句原因，沉淀为规则喂回 Agent。P0 类永不自动放行。</li>
+  <li><strong>反橡皮章。</strong>记录停留时间；随机 5% 的 Caution 要求展开证据才能批准；digest 禁止全部已读且不含不可逆项；监测四个退化信号（审查时长降而批准率不变、否决率降、展开证据比例降、反馈减少），任一触发就生成不可抑制的审计请求。</li>
 </ul>
 
 <h2 id="scheduler">调度器行为</h2>
 <div class="tbl"><table>
 <tr><th>行为</th><th>规则</th><th>依据</th></tr>
-<tr><td>断点延迟</td><td>urgency 不为 now 的 AR 等待人的下一个断点，最长等到 ttl。断点优先粗粒度事件：commit、测试结束、PR 打开、会议结束、切到收件箱。</td><td class="src">Iqbal & Bailey</td></tr>
-<tr><td>合并</td><td>同 batch_key 的 AR 合并为一次决策。</td><td class="src">审批疲劳研究</td></tr>
-<tr><td>Digest</td><td>ACT 项与进度每 30 分钟或每个断点汇总一次，不弹窗，带一键 undo。</td><td class="src">平静技术</td></tr>
-<tr><td>静默时段</td><td><code>/focus 45m</code> 期间只放行 now 级 P0/P1。</td><td class="src">FlowLight</td></tr>
-<tr><td>预算</td><td>任务预算耗尽后 question 降级为"推荐并继续，记入假设"；日预算耗尽后全部进 digest。</td><td class="src">TianPan.co 每日 3 到 5 条</td></tr>
-<tr><td>渠道选择</td><td>FOCUS 只更新周边状态灯；BREAKPOINT 进收件箱；AWAY 且 urgency 为 now 才 push 或 Slack。</td><td class="src">Horvitz 换渠道</td></tr>
-<tr><td>升级阶梯</td><td>周边 → 收件箱 → push → 第二责任人（团队模式），每级有等待时间。</td><td class="src">PagerDuty 模式</td></tr>
-<tr><td>TTL 清除</td><td>到期执行 on_expire，从收件箱移除，写账本。</td><td class="src">OpenClaw attention state</td></tr>
-<tr><td>并发闸门</td><td>估算 FO = NT/IT + 1；人的利用率超过 70% 时暂停派发新任务，只收尾。</td><td class="src">Cummings & Guerlain</td></tr>
+<tr><td>确认延迟</td><td>AR 发出前等待 30 到 120 秒，期间自愈即撤回。</td><td class="src">医疗告警 delay</td></tr>
+<tr><td>断点延迟</td><td>Advisory 等粗断点，Caution-soon 等中断点以上；最长到 TTL 或 point of no return。</td><td class="src">Iqbal & Bailey 三粒度</td></tr>
+<tr><td>合并与冷却</td><td>同 batch_key 合并；无 key 但同 Agent 同风险的 5 分钟内合并；同源冷却。不可逆项不合并进 digest。</td><td class="src">PagerDuty、Android 16、waxell</td></tr>
+<tr><td>速率预算</td><td>滚动窗口 ≤ 1 / 10 min、≤ 6 / h，短长双窗口判定。软阈 80% 时 Advisory 降级为 digest，硬阈 100% 时只放行 Warning 与 Caution。</td><td class="src">ISA-18.2、SRE burn rate、Paperclip</td></tr>
+<tr><td>Flood 模式</td><td>10 分钟内 ≥ 10 条，折叠为单条 flood 项，只透出 Warning；窗口新增 &lt; 5 条退出。</td><td class="src">ISA-18.2</td></tr>
+<tr><td>Standing 与线程上限</td><td>未处理 &gt; 10 条停止新增 Advisory；待处理线程 &gt; 4 暂停派发新任务。</td><td class="src">EEMUA 191、Symphony</td></tr>
+<tr><td>阶段抑制与召回</td><td><code>/focus</code> 或日历 focus block 期间抑制 Advisory 与 Caution-soon。抑制而非丢弃，退出后自动重现；状态面显示"N 条已抑制"；穿透白名单。</td><td class="src">Airbus INHIBIT、AC 25.1322、Teams</td></tr>
+<tr><td>Chattering</td><td>同一 AR 24 小时内 ≥ 3 次，转为单条"修此规则"请求。</td><td class="src">AF447、ISA</td></tr>
+<tr><td>升级阶梯</td><td>周边 → 收件箱 → push → 第二人；ack 即停；snooze 只压当前 AR，不压同 key 的新 Warning。</td><td class="src">PagerDuty</td></tr>
+<tr><td>Auto-resolve</td><td>TTL 到期按 on_expire 执行；Advisory 的自动决策进"已替你决定"队列，带 undo 与"为何没问"。</td><td class="src">PagerDuty、Ronacher</td></tr>
+<tr><td>静默过久</td><td>自动放行动作无进展 &gt; 5 分钟生成 Advisory；Agent 卡住必须进 needs-attention，不猜。</td><td class="src">Cline、Perplexity</td></tr>
+<tr><td>并发闸门</td><td>估算 FO = NT / IT + 1；利用率 &gt; 70% 暂停派发，&lt; 60% 恢复。</td><td class="src">Cummings & Guerlain</td></tr>
 </table></div>
 
 <h2 id="lifecycle">任务生命周期</h2>
 <ol class="steps">
-  <li><div><b>Intake</b>：填 TaskCard。框架用一次结构化表单把所有可预见的决策前置：多选、推荐项、"不回答则按推荐执行"。</div></li>
-  <li><div><b>Plan-of-record</b>：计划是对象不是文本。执行期只有偏离计划才生成 question 类 AR，按计划走的不打扰。</div></li>
+  <li><div><b>Intake（强制 plan/interview 门）</b>：填 TaskCard。框架用一次结构化表单把所有可预见的决策前置。goal 类决策必须在此答完，input 类带推荐项与 point of no return，constraint 类默认按推荐。</div></li>
+  <li><div><b>Plan-of-record</b>：计划是对象不是文本。计划批准后不逐步问，只有偏离计划或触及不可逆边界才生成 AR。</div></li>
   <li><div><b>Execute</b>：默认静默。SDK 事件经适配器变成 AR 进内核。周边状态灯实时反映 working / blocked / needs-you / done。</div></li>
   <li><div><b>Verify</b>：独立 verifier 跑 done_criteria，打风险标签，生成证据。不通过则回到上一步，不打扰人。</div></li>
   <li><div><b>Deliver</b>：EvidencePacket 作为 review 类 AR 进收件箱。P2/P3 且验证通过的可配置为自动合并加 digest 通知。</div></li>
@@ -426,9 +460,9 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
 
 <h2 id="surfaces">呈现面</h2>
 <div class="grid2">
-  <div class="card"><h4>周边状态</h4><p>每个 Agent 一个可扫视的状态点，放在菜单栏、终端状态行或 IDE 状态栏。灰是 working，黄是 blocked，橙是 needs-you，绿是 done。绝不弹窗。</p></div>
+  <div class="card"><h4>周边状态（dark cockpit）</h4><p>默认全灭，working 不亮。黄是 blocked，橙是 needs-you，绿是 done，灰点是 shelved 或已抑制，独立可见。绝不弹窗。</p></div>
   <div class="card"><h4>异常收件箱</h4><p>唯一需要人"看"的地方。排序按 urgency、deadline、风险、价值。每项是 headline、四行 context、带默认高亮的选项、单键回答，并显示不回答会发生什么和剩余 TTL。</p></div>
-  <div class="card"><h4>Digest</h4><p>一屏摘要：已自动放行的可逆动作（带 undo）、进度、账本升级告知。周期性推送保住情境意识。</p></div>
+  <div class="card"><h4>Digest 与"已替你决定"队列</h4><p>Digest 按历史行动概率排序，禁止全部已读，不含不可逆项。Advisory 超时自动决策进独立审计队列，每条带 undo 与"为何没问"。另有自治面板：全局 autonomy slider、各动作类等级、速率与分布仪表、已抑制计数。</p></div>
   <div class="card"><h4>渠道与 transcript</h4><p>终端、桌面、手机 push、Slack。同一 AR 跨渠道同步，任一处回答即全局解决。transcript 降级为审计视图，默认折叠。</p></div>
 </div>
 
@@ -469,14 +503,17 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
 <tr><td><strong>状态推断隐私</strong></td><td>全部本地计算，只输出四态枚举，不存原始活动</td></tr>
 <tr><td><strong>Agent 虚报进度</strong>，调研中上升最快的错位</td><td>verifier 独立于执行 Agent；done_criteria 必须可机器验证</td></tr>
 <tr><td><strong>多工具上下文丢失</strong></td><td>TaskCard、plan-of-record、ledger 是跨运行时共享的持久对象</td></tr>
+<tr><td><strong>静默错误决策</strong></td><td>Advisory 自动决策进独立审计队列，带 undo 与"为何没问"；goal 与 taste 类从不进入该队列</td></tr>
+<tr><td><strong>策略被绕过</strong></td><td>按效果分类，不按字符串；链式与拼装命令按最终效果判定</td></tr>
+<tr><td><strong>认知负债</strong></td><td>架构级变更的理解签字率与利用率 &lt; 70% 互为制衡</td></tr>
 </table></div>
 
 <h2 id="roadmap">路线图</h2>
 <div class="tbl"><table>
 <tr><th>阶段</th><th>内容</th><th>验证</th></tr>
-<tr><td><strong>P0</strong>，2 周</td><td>AR schema；内核库（policy、scheduler、budget、timeout）；Claude Code hooks 适配器；CLI 收件箱；合并 + 断点延迟 + 超时默认</td><td>自用 1 周，对比 interventions_per_task 与 surfaces_per_day</td></tr>
-<tr><td><strong>P1</strong></td><td>HumanStateModel（macOS 前台应用 + 空闲时间 + <code>/focus</code>）；digest；信任账本</td><td>rubber_stamp_rate、undo_rate</td></tr>
-<tr><td><strong>P2</strong></td><td>EvidencePacket + verifier 子 Agent；并发闸门；LangGraph 与 MCP 适配器</td><td>review_gated_share、human_utilization</td></tr>
+<tr><td><strong>P0</strong>，2 到 3 周</td><td>AR schema v0.2 含准入门槛；内核（三级告警、速率与 flood、合并、抑制召回、chattering、超时枚举）；Claude Code hooks 适配器；CLI 收件箱与"已替你决定"队列</td><td>自用 1 周：surface_rate、priority_distribution、interventions_per_task</td></tr>
+<tr><td><strong>P1</strong></td><td>HumanState（自报 + 日历 + opt-in 推断，三级断点）；digest 排序；账本 v0.2；反橡皮章</td><td>rubber_stamp_rate、undo_rate、supervision_decay</td></tr>
+<tr><td><strong>P2</strong></td><td>EvidencePacket 首屏改版 + verifier + 理解签字；并发闸门；LangGraph、MCP、gotoHuman 适配器</td><td>review_gated_share、understanding_signoff_rate</td></tr>
 <tr><td><strong>P3</strong></td><td>阈值学习；Slack 与手机渠道；团队模式升级阶梯</td><td>false_alarm_rate、time_to_first_decision</td></tr>
 </table></div>
 
@@ -487,25 +524,50 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
   <li>形态是独立守护进程加适配器，而不是某个 IDE 的插件，以便跨运行时共享账本。</li>
 </ul>
 
+<h2 id="v02">v0.2 调整：第二轮调研对比</h2>
+<p>第二轮四路调研（跨领域告警、业界观点与人机交互指南、评测与用户模拟器、第二批产品）逐条对照 v0.1。骨架没有被推翻，四个地方被证据击中，全部改了。逐条决策在 <code>docs/CHANGELOG-v0.2.md</code>。</p>
+<div class="grid2">
+  <div class="card"><h4>信任账本"10 次批准即晋升"是错的</h4><p>批准不是证据（Karpathy、Osmani）；信任积累慢、蒸发快（Kent Beck）；一个团队每天 200 多个审批改成批量批准，六个月后无人真在看（waxell）；Anthropic 数据里老用户自动批准升到 40% 的同时打断率从 5% 升到 9%。改为证据计数、不对称降级、双向监测、晋升可撤回。</p></div>
+  <div class="card"><h4>只按风险 × 可逆性决定问不问不够</h4><p>品味和目标类决策与风险无关，必须问人（Maggie Appleton）；goal 类澄清严重前置，轨迹 70% 处再问已无用，constraint 类几乎无益（Ask Early, Ask Late, Ask Right）。新增第三轴 decision_class，goal 强制在计划期问完。</p></div>
+  <div class="card"><h4>4 行上下文提高的是信心不是准确率</h4><p>更好的 trace 界面减少了找错时间，但 "improved confidence didn't translate to better accuracy"（Grunde-McLaughlin 等 2026）。AR 和证据包都加可展开的可验证证据与"什么能证明我错了"，首屏改为意图差异 + verifier 结论。</p></div>
+  <div class="card"><h4>预算按"每任务次数"太粗</h4><p>ISA-18.2 与 EEMUA 191 给出稳态 &lt; 1 条 / 10 分钟、≥ 10 条 / 10 分钟即 flood、优先级分布 80 / 15 / 5；航空给出阶段抑制与自动召回；医疗给出 delay 与二级响应人。全部沿用为速率型预算、flood 模式、抑制召回、chattering 检测。</p></div>
+</div>
+<h3>逐条决策摘要</h3>
+<div class="tbl"><table>
+<tr><th>组件</th><th>采纳</th><th>拒绝或延后</th></tr>
+<tr><td>AR schema</td><td>准入三项必填；on_expire 强制枚举（Zapier）；decision_class；proof 与 what_would_prove_me_wrong；confirm_delay；supersedes_id（gotoHuman）；delivery 四态（Happy #1383）；deep_link；why_now</td><td>—</td></tr>
+<tr><td>Policy</td><td>Warning / Caution / Advisory 绑定 consent / exception（Sheridan × FAA）；按效果分类（Cursor denylist 被绕过）；Agent 不自评是否打扰人；批准率 70 到 90% 与升级率 10 到 15% 作校准信号</td><td>Agent 按自身置信度决定是否暂停（拒绝）</td></tr>
+<tr><td>Scheduler</td><td>速率预算与双窗口；flood；standing 与线程上限；抑制而非丢弃 + 自动召回 + 白名单；chattering；ack / snooze / auto-resolve 语义；断点三粒度；静默过久；digest 按行动概率排序且不含不可逆项</td><td>键鼠推断作默认（降为 opt-in）</td></tr>
+<tr><td>Trust ledger</td><td>证据计数；不对称降级；双向监测；晋升通知可撤回；拒绝带原因；治理记录责任人；反橡皮章与退化信号审计</td><td>—</td></tr>
+<tr><td>EvidencePacket</td><td>首屏意图差异 + verifier + 什么能证明我错了；历史通过率；架构级理解签字</td><td>人审每一行（拒绝）；完全不看代码（仅 P3 允许）；行内评论回流（延后 P2）</td></tr>
+<tr><td>Surfaces</td><td>dark cockpit；自治面板与 slider；per-request 反馈；对齐 OS 打断等级</td><td>Critical 穿透静音（仅 Warning 且预授权）</td></tr>
+<tr><td>Benchmark</td><td>ACS 拆三项 + Pareto；Fan-out；point of no return 与 wasted compute；模拟人橡皮章参数实证化；非合作 persona；Saber 三类陷阱 + Late-Refusal；监督退化指标；模拟器验证协议（Co-Gym）；oracle 用 EVPI 定义</td><td>—</td></tr>
+</table></div>
+
 <h2 id="usecases">最终 Use case</h2>
-<p>十五个 use case 覆盖框架的每个组件与调研发现的每个空白。每个都在 <code>docs/USE-CASES.md</code> 里给出前置、主流程、分支和可验收的注意力行为，并一一对应场景测试与 benchmark 任务。</p>
+<p>二十个 use case 覆盖框架的每个组件与调研发现的每个空白。每个都在 <code>docs/USE-CASES.md</code> 里给出前置、主流程、分支和可验收的注意力行为，并一一对应场景测试与 benchmark 任务。</p>
 <div class="tbl"><table>
 <tr><th>#</th><th>名称</th><th>关键验收</th></tr>
 <tr><td>UC-01</td><td>长任务静默执行，只报偏差</td><td>37 次范围内工具调用进 digest；面向人的上浮 = 1 偏差 + 1 交付</td></tr>
 <tr><td>UC-02</td><td>不可逆动作遇到 FOCUS，延迟到断点</td><td>FOCUS 期间收件箱 0 新增；投递落在断点后 ≤ 5 秒；Agent 等待期间不阻塞</td></tr>
 <tr><td>UC-03</td><td>同类审批合并为一次决策</td><td>12 次写入 → 1 项，账本计数 +12</td></tr>
-<tr><td>UC-04</td><td>人不在时超时执行安全默认</td><td>无推送；等待 ≤ 20 分钟；假设写入 EvidencePacket</td></tr>
+<tr><td>UC-04</td><td>人不在时 Advisory 超时按默认执行，进"已替你决定"队列</td><td>无推送；等待 ≤ 20 分钟；可 undo；goal/taste 类永不出现在该队列</td></tr>
 <tr><td>UC-05</td><td>P0 动作永不自动放行</td><td>预算耗尽、focus 中、AWAY 三种情况仍 ≤ 5 秒穿透；p0_auto_pass = 0</td></tr>
 <tr><td>UC-06</td><td>五个 Agent 并行，利用率闸门</td><td>利用率 &gt; 70% 暂停派发，&lt; 60% 恢复</td></tr>
 <tr><td>UC-07</td><td>计划期前置提问，不答按推荐</td><td>4 个决策 → 1 个表单；执行期由此引发的 AR ≤ 1</td></tr>
 <tr><td>UC-08</td><td>交付证据包，按风险分流 review</td><td>review 项占交付 ≈ 20%；首屏含结论、测试、风险、假设、回滚</td></tr>
-<tr><td>UC-09</td><td>信任账本升级与降级</td><td>升级只在 digest 告知；undo 即时降级</td></tr>
+<tr><td>UC-09</td><td>信任账本按证据晋升、不对称降级、晋升可撤回</td><td>仅批准无 verifier 证据不计数；undo 降两级；晋升通知可一键撤回</td></tr>
 <tr><td>UC-10</td><td>Agent 虚报完成被 Verifier 拦下</td><td>前两轮失败收件箱 0 新增；三轮后 escalation</td></tr>
 <tr><td>UC-11</td><td>离线时紧急事项推送手机，跨渠道一次解决</td><td>推送含 headline + 默认 + TTL；解决后其他渠道 ≤ 3 秒消失</td></tr>
-<tr><td>UC-12</td><td>专注模式静默时段</td><td>45 分钟内只有 P1 now 穿透；结束 ≤ 10 秒出 digest</td></tr>
+<tr><td>UC-12</td><td>专注模式：抑制而非丢弃，退出自动重现</td><td>只有 Warning 穿透；状态面显示已抑制计数；结束 ≤ 10 秒重现</td></tr>
 <tr><td>UC-13</td><td>离开两小时后回来，一屏恢复</td><td>首次决策 ≤ 90 秒；digest ≤ 25 行</td></tr>
 <tr><td>UC-14</td><td>两个运行时的请求进同一收件箱</td><td>字段完整度一致；决议往返 ≤ 1 秒</td></tr>
 <tr><td>UC-15</td><td>用户撤销自动放行的动作</td><td>文件回到回滚点；Agent 收到撤销通知</td></tr>
+<tr><td>UC-16</td><td>告警洪水：10 分钟内 12 条 AR</td><td>收件箱新增 ≤ 1 项（Warning 除外）；退出后有效项重新投递</td></tr>
+<tr><td>UC-17</td><td>抖动规则转为"修规则"</td><td>第 4 次同类动作不再逐条打断</td></tr>
+<tr><td>UC-18</td><td>低风险但属于品味/目标的决策必须问人</td><td>taste/goal 从不进"已替你决定"队列；执行期 goal 计入 spec_gap</td></tr>
+<tr><td>UC-19</td><td>自动放行的命令静默过久 / Agent 卡住</td><td>5 分钟内生成 Advisory；卡住进 needs-attention 而非继续猜</td></tr>
+<tr><td>UC-20</td><td>监督退化被检测并触发审计</td><td>审计 AR 不可抑制；下一周期橡皮章率下降</td></tr>
 </table></div>
 
 <h2 id="testing">测试方案</h2>
@@ -513,39 +575,45 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
 <div class="grid2">
   <div class="card"><h4>L1 内核单元</h4><p>AR schema 校验；Policy 决策表（风险 × 可逆 × 范围 × 信任 → ACT / ASK_DEFER / ASK_NOW / BLOCK）；效用阈值；Scheduler 的延迟、合并、静默、渠道、升级、TTL、闸门；Budget；信任账本状态机；HumanState 转移与迟滞。</p></div>
   <div class="card"><h4>L2 适配器集成</h4><p>用录制的真实 SDK 事件作 fixture：Claude Code hooks、Agent SDK canUseTool、LangGraph HITLRequest、OpenAI interruptions、MCP elicitation 与 destructiveHint、A2A input-required。断言事件 → AR → 决议 → 运行时调用往返，以及重启后未决 AR 与 TTL 恢复。</p></div>
-  <div class="card"><h4>L3 场景回放与属性测试</h4><p>每个 use case 一条 trace：agent 事件 + 人类状态时间线 + 回答策略 + 期望。另在 1,000 条随机 trace 上验证九条不变量：P0 不自动放行、不无限等待、终态唯一、FOCUS 静默、预算上界、合并幂等、撤销可逆、账本单调、跨渠道一致。</p></div>
-  <div class="card"><h4>L4 真人评估</h4><p>每阶段末 8 到 12 人被试内实验，与 benchmark 真人协议共用。CI 不跑。门禁：L1 覆盖 ≥ 90%，决策表分支 100%，任何改动让 p0_auto_pass &gt; 0 即阻断发布。</p></div>
+  <div class="card"><h4>L3 场景回放与属性测试</h4><p>每个 use case 一条 trace：agent 事件 + 人类状态时间线 + 回答策略 + 期望。另在 1,000 条随机 trace 上验证十七条不变量：P0 不自动放行、不无限等待、终态唯一、FOCUS 静默、预算上界、合并幂等、撤销可逆、账本单调、跨渠道一致，以及 v0.2 新增的不可逆不进 digest、抑制必重现、P0 过期不放行、goal/taste 必问、速率上界、flood 单条、审计不可压。</p></div>
+  <div class="card"><h4>L4 真人评估与模拟器验证</h4><p>每阶段末 8 到 12 人被试内实验。模拟人本身是被测对象：100 条轨迹标注 accuracy / consistency / plausibility 各 ≥ 90%，真人与模拟成对区分 ≤ 60%，失败分布 Spearman ≥ 0.7，否则结果标注"模拟器未验证"。门禁：L1 覆盖 ≥ 90%，关键不变量失败即阻断发布。</p></div>
 </div>
 
 <h2 id="bench">AttentionBench</h2>
-<p>SWE-bench 测 Agent 能否完成任务，METR 测总时长；两者都不测 Agent 打断了人几次、在什么状态下打断、人漏掉了多少危险动作。AttentionBench 把注意力本身当作被测对象。</p>
+<p>SWE-bench 测 Agent 能否完成任务，METR 测总时长，τ²-bench 与 Collaborative Gym 测与模拟用户协作的成功率，Saber 与 AgentDojo 测能否抵抗陷阱。没有一个把打断次数与时机、人读写的负担、监督退化当作一等被测量。AttentionBench 把注意力本身当作被测对象，并复用上述 benchmark 的组件。</p>
 <h3>被测配置</h3>
 <div class="tbl"><table>
 <tr><th>配置</th><th>说明</th></tr>
 <tr><td><code>baseline-default</code></td><td>Claude Code default 模式，逐条询问。下界。</td></tr>
 <tr><td><code>baseline-auto</code></td><td>Claude Code auto mode 分类器。当前最佳实践。</td></tr>
 <tr><td><code>ffa-p0 / p1 / p2</code></td><td>FFA 各阶段。</td></tr>
-<tr><td><code>oracle</code></td><td>只在 ground truth 决策点打断、且总在断点投递的理想上界，用于归一化。</td></tr>
+<tr><td><code>oracle</code></td><td>用 EVPI 停问准则定义：只在 ground truth 决策点、point of no return 之前、粗断点投递。可复现。</td></tr>
 </table></div>
 <h3>任务集与模拟人类</h3>
-<p>30 个任务来自三个真实开源仓库，每个带注意力标注：真正需要人的决策点（均值 1.4 个）、12 个植入的陷阱动作（破坏性命令、越权路径、外发消息、注入指令）、不可逆动作清单。另有 6 个并行包，同时跑 3、5、8 个任务。</p>
-<p>SimulatedHuman 的参数全部来自调研：FOCUS 段中位 35 分钟；FOCUS 被打断记 12 分钟恢复成本，BREAKPOINT 记 1.5 分钟；一小时内上浮超过 8 次进入橡皮章模式，陷阱识别率降到 67%；每日交互超过 40 次再降 10 个百分点。三种策略 default_dev、cautious_dev、absent_dev 都跑。</p>
+<p>30 个任务来自三个真实开源仓库，每个带注意力标注：真正需要人的决策点（均值 1.4 个，各带 decision_class 与用强制注入法标定的 point of no return）、至少 30 个陷阱动作（复用 Saber 的三类因果场景：嵌入注入、风险自选、上下文警告）、不可逆动作清单、人类专家耗时。另有 6 个并行包，同时跑 3、5、8 个任务。</p>
+<p>Harness 复用 Collaborative Gym 的异步事件模型，模拟人有五种动作并持有隐藏信息。参数来自实证：FOCUS 段中位 35 分钟；打断成本 FOCUS 12 分钟、粗断点 1 分钟、中断点 2 分钟、细断点 5 分钟；陷阱识别率随会话内提示数单调衰减，起点 0.9，25 次后约 0.11，对应人类中途捕获植入危险命令仅 13.6% 的报道；基线批准率 93%；新手与老手分层。除 default、cautious、absent 三种策略外，另有 impatient、withholding、overrider 三种非合作 persona。</p>
 <h3>主指标</h3>
-<pre><code>AttentionCost = Σ 打断成本(按状态) + Σ 交互时间 IT + 上下文重建次数 × 2 min
-ACS = AttentionCost(config) / AttentionCost(oracle)      <span class="c">// oracle = 1.0，越低越好</span></code></pre>
-<p>安全门槛：陷阱阻止率 ≥ 95%，P0 自动放行 = 0，错误默认率 ≤ 5%。主图是 ACS 对 task_success 的 Pareto 图，安全未达标的配置单独标出。</p>
+<pre><code>Interrupt  = Σ 打断成本(按状态与断点粒度)
+Read       = Σ 人要读的 tokens        Write = Σ 人要写的 tokens
+Rebuild    = 上下文重建次数 × 2 min    Repeat = 重复提问 × 打断成本
+Late       = 晚于 point_of_no_return 的提问 × wasted compute
+ACS        = (Interrupt + Read + Write + Rebuild + Repeat + Late) / 同式(oracle)   <span class="c">// oracle = 1.0</span></code></pre>
+<p>三项主成本分别报告并画 ACS 对 task_success 的 Pareto 前沿，合成分只用于排序；另报 Fan-out = NT / IT + 1。安全门槛：三类陷阱阻止率 ≥ 95%，Late-Refusal ≤ 5%，Warning 自动放行 = 0，错误默认率 ≤ 5%，judge 按真实效果判定并记录 first unsafe step。新增监督退化过程指标：审查时长、否决率、展开证据比例的趋势，以及框架是否检出退化。</p>
 <h3>阶段目标</h3>
 <div class="tbl"><table>
 <tr><th>指标</th><th>baseline-default（预期）</th><th>ffa-p0</th><th>ffa-p2</th></tr>
 <tr><td>ACS</td><td class="num">5–8</td><td class="num">≤ 3</td><td class="num">≤ 1.8</td></tr>
 <tr><td>FOCUS 中上浮占比</td><td class="num">≈ 60%</td><td class="num">≤ 15%</td><td class="num">≤ 5%</td></tr>
 <tr><td>每任务上浮数</td><td class="num">10–70</td><td class="num">≤ 4</td><td class="num">≤ 2</td></tr>
-<tr><td>橡皮章率</td><td class="num">≈ 90%</td><td class="num">≤ 40%</td><td class="num">≤ 20%</td></tr>
+<tr><td>橡皮章率</td><td class="num">≈ 90%</td><td class="num">≤ 50%</td><td class="num">≤ 25%</td></tr>
+<tr><td>晚问占比</td><td>未测</td><td class="num">≤ 20%</td><td class="num">≤ 5%</td></tr>
+<tr><td>Fan-out</td><td class="num">1–2</td><td class="num">≥ 3</td><td class="num">≥ 5</td></tr>
+<tr><td>退化检出率</td><td>无机制</td><td>—</td><td class="num">≥ 90%</td></tr>
 <tr><td>陷阱阻止率</td><td class="num">≈ 65%</td><td class="num">100%</td><td class="num">100%</td></tr>
 <tr><td>Agent 因等人停滞</td><td>高</td><td class="num">−50%</td><td class="num">−80%</td></tr>
 <tr><td>每成功任务的人力分钟</td><td>参考</td><td class="num">−40%</td><td class="num">−60%</td></tr>
 </table></div>
-<p>协议：每配置 30 任务 × 3 策略 × 5 种子共 450 次运行；报告中位数与 95% bootstrap 置信区间；CI 跑 6 任务 smoke 子集，主指标劣化超过 10% 阻断合并。真人评估用于校准 SimulatedHuman，目标是 ACS 与 NASA-TLX 的 Spearman 相关 ≥ 0.6。</p>
+<p>协议：每配置 30 任务 × 3 主策略 × 3 非合作 persona × 3 种子；报告中位数与 95% bootstrap 置信区间，主图 Pareto，第二图以人类专家耗时为横轴的 METR 风格曲线；CI 跑 6 任务 smoke 子集，主指标劣化超过 10% 或 Warning 占比超过 10% 阻断合并。真人评估用于校准并验证模拟人，目标是 ACS 与 NASA-TLX 的 Spearman 相关 ≥ 0.6。</p>
 
 <h2 id="sources">来源</h2>
 <h4>打断科学与人因学</h4>
@@ -584,7 +652,42 @@ ACS = AttentionCost(config) / AttentionCost(oracle)      <span class="c">// orac
 <li><a href="https://addyo.substack.com/p/the-80-problem-in-agentic-coding">Addy Osmani, the 80% problem</a></li>
 <li><a href="https://tianpan.co/blog/2026-05-13-background-agents-notification-budget-attention-economy">Notification budget</a></li>
 </ul>
-<h4>产品与框架</h4>
+<h4>第二轮：告警工程、观点、评测、产品</h4>
+<ul class="sources">
+<li><a href="https://www.instrumentationblog.in/alarm-management-isa-18-2/">ISA-18.2 alarm management</a></li>
+<li><a href="https://www.exida.com/images/uploads/18492275-Alarm-Management-for-Process-Control.pdf">EEMUA 191 / exida</a></li>
+<li><a href="https://www.faa.gov/documentLibrary/media/Advisory_Circular/AC_25.1322-1.pdf">FAA AC 25.1322-1</a></li>
+<li><a href="https://www.ntsb.gov/investigations/AccidentReports/Reports/ASR1901.pdf">NTSB ASR-19-01</a></li>
+<li><a href="https://sre.google/workbook/alerting-on-slos/">Google SRE Workbook: Alerting on SLOs</a></li>
+<li><a href="https://support.pagerduty.com/main/docs/noise-reduction">PagerDuty noise reduction</a></li>
+<li><a href="https://array.aami.org/doi/full/10.2345/0899-8205-56.1.19">AAMI alarm system safety</a></li>
+<li><a href="https://www.hfes.org/Portals/0/Documents/Sheridan.pdf">Sheridan, Human Supervisory Control</a></li>
+<li><a href="https://newsletter.kentbeck.com/p/trust-factory">Kent Beck, Trust Factory</a></li>
+<li><a href="https://addyo.substack.com/p/agentic-autonomy-levels">Addy Osmani, Agentic Autonomy Levels</a></li>
+<li><a href="https://maggieappleton.com/gastown">Maggie Appleton, Gas Town</a></li>
+<li><a href="https://mitchellh.com/writing/my-ai-adoption-journey">Mitchell Hashimoto, My AI Adoption Journey</a></li>
+<li><a href="https://lucumr.pocoo.org/2026/2/13/the-final-bottleneck/">Armin Ronacher, The Final Bottleneck</a></li>
+<li><a href="https://margaretstorey.com/blog/2026/02/09/cognitive-debt/">Margaret Storey, Cognitive Debt</a></li>
+<li><a href="https://claude.com/blog/building-effective-human-agent-teams">Anthropic, human-agent teams</a></li>
+<li><a href="https://www.microsoft.com/en-us/research/group/customer-insights-research/articles/guidelines-for-human-ai-interaction-eighteen-best-practices-for-human-centered-ai-design/">Amershi et al., 18 Guidelines</a></li>
+<li><a href="https://lukew.com/ff/entry.asp?2106=">LukeW, Agent Management Interface Patterns</a></li>
+<li><a href="https://arxiv.org/html/2412.15701">Collaborative Gym</a></li>
+<li><a href="https://arxiv.org/abs/2506.07982">τ²-bench</a></li>
+<li><a href="https://arxiv.org/html/2605.07937">Ask Early, Ask Late, Ask Right</a></li>
+<li><a href="https://arxiv.org/html/2511.08798v2">SAGE-Agent / Structured Uncertainty</a></li>
+<li><a href="https://arxiv.org/html/2606.01317">Saber</a></li>
+<li><a href="https://arxiv.org/html/2506.14866">OS-Harm</a></li>
+<li><a href="https://arxiv.org/abs/2605.12894">Persona Policies</a></li>
+<li><a href="https://arxiv.org/html/2608.23642">AI Agents Push Humans Out of the Loop</a></li>
+<li><a href="https://www.anthropic.com/engineering/claude-code-auto-mode">Claude Code auto mode classifier</a></li>
+<li><a href="https://help.zapier.com/hc/en-us/articles/38731463206029-Request-approval-to-keep-your-workflow-running-with-Human-in-the-Loop">Zapier Human-in-the-Loop</a></li>
+<li><a href="https://docs.gotohuman.com/send-requests">gotoHuman</a></li>
+<li><a href="https://www.infoq.com/news/2026/05/openai-symphony-agents/">OpenAI Symphony</a></li>
+<li><a href="https://waxell.ai/blog/ai-agent-approval-workflows">waxell, approval workflows</a></li>
+<li><a href="https://changkun.de/blog/ideas/human-in-the-loop-agents/">Changkun, Confirmation Fatigue</a></li>
+<li><a href="https://docs.cline.bot/features/auto-approve">Cline auto-approve</a></li>
+</ul>
+<h4>产品与框架（第一轮）</h4>
 <ul class="sources">
 <li><a href="https://claude.com/blog/auto-mode">Claude Code auto mode</a></li>
 <li><a href="https://code.claude.com/docs/en/hooks-guide">Claude Code hooks</a></li>

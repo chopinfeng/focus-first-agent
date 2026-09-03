@@ -58,3 +58,50 @@
 - 每日主动上浮 ≤ 3–5 条；从 acted / dismissed / ignored 学习阈值（TianPan.co）。
 - Agent 主动澄清的频率是人打断它的 2 倍，且"具体、可一键回答"的澄清才被接受（Anthropic autonomy、Proactive Agent）。
 - 变更 ≤ 250 行；spec-first 委派；独立 verifier subagent 对抗 "early victory"。
+
+---
+
+# 第二轮调研补充（2026-09-03）
+
+四路：跨领域告警设计、业界观点与 HAI 指南、评测与用户模拟器、第二批产品。原始材料 `docs/research/05–08`，逐条决策 `docs/CHANGELOG-v0.2.md`。
+
+## 6. 告警工程 40 年的现成答案
+
+| 领域 | 规则 / 数字 |
+|---|---|
+| 过程控制 ISA-18.2 / EEMUA 191 | 稳态 < 1 条 / 10 min / 操作员；≥ 10 条 / 10 min = flood；常驻 < 10；优先级分布 ≈ 80 / 15 / 5；"不需要动作的不是告警"；rationalization 删 30–60% |
+| 航空 FAA AC 25.1322 / Airbus | Warning / Caution / Advisory 三级；起降阶段抑制非关键告警并在退出后**自动召回**；抑制必须可见；dark cockpit；AF447 告警启停 75 次导致误判 |
+| 医疗 | 85–99% ICU 警报不可操作；阈值微调（SpO2 90→88）−63%；delay + 去重 + 二级响应人 |
+| SRE | page 必须 urgent/important/actionable/real；对症状不对原因；多窗口 burn rate；每班 2–3 个可操作事件；ack 即停升级 |
+| 监督控制 | Sheridan：management by consent（批准后执行）vs by exception（否决窗口，超时执行） |
+| 消费级 | Apple Passive / Active / Time-Sensitive / Critical；Gmail 按行动概率排序：阅读时间 −6% |
+
+## 7. 观点与批评击中 v0.1 的地方
+
+- **信任不对称**（Kent Beck）："Trust accumulates slowly & evaporates in an instant"；Karpathy、Osmani：晋升门槛应是 verifier 质量而非批准次数。Anthropic 数据：老用户 auto-approve 升到 40% 的同时打断率从 5% 升到 9%。
+- **品味与目标必须问人**（Maggie Appleton）：设计决策 "require your human context, taste, preferences, and vision"，与风险等级无关。
+- **信心 ≠ 准确率**（Grunde-McLaughlin 等 2026）：更好的 trace 界面 "improved confidence didn't translate to better accuracy"。
+- **PR 不是审阅单位**（Dede、Yegge）："The human LGTM has become the single biggest liability"；人审 intent 与 spec。
+- **认知负债**（Storey）：至少一人完全理解每个变更——与"少干预"目标冲突，需要制衡指标。
+- **推断 vs 自报**（Hashimoto）："turn off agent desktop notifications... During natural breaks in your work, tab over and check on it"。
+- **Amershi 18 条**逐条映射后发现 8 个缺口：自治等级面板、历史准确率、为何现在问、细粒度反馈、晋升通知、全局 slider 等。
+
+## 8. 评测方法可直接复用
+
+- **Collaborative Gym**：异步事件模型、模拟人五种动作 + 隐藏信息、五类失败分类、模拟器验证协议（100 条标注 ≥ 90%、成对区分 ≈ 随机、失败分布 Spearman 0.8）。
+- **Ask Early, Ask Late, Ask Right**：强制注入法标定 point of no return；goal 类澄清严重前置（70% 处已无用），constraint 类几乎无益；wasted compute。
+- **Saber**：716 个有状态陷阱任务，三类因果场景（嵌入注入 / 风险自选 / 上下文警告），Late-Refusal 指标；最强模型上下文警告场景 HSR 仅 82.5%。
+- **Persona Policies / UserBench**：LLM 模拟用户天然过于合作，需要非合作 persona。
+- **AI Agents Push Humans Out of the Loop**：监督退化签名——审查时长降而批准率不变、override 降、索证降。
+- **SAGE-Agent**：EVPI − λ·冗余 的停问准则，可作 oracle 的数学定义。
+- **Claude Code auto mode classifier**：按真实效果判定（`&&` 链视为一个动作）；FPR 0.4%、FNR 17%。
+
+## 9. 第二批产品确认的缺口与先例
+
+- 没有任何产品做 notification budget（Amp Orbs 无唤醒频率上限）——FFA 的差异化点。
+- Zapier HITL：超时动作强制二选一，是"safe default"最直接的商用先例。
+- Paperclip：预算 80% 软警告 / 100% 硬停。
+- Symphony：人舒适并发 3–5 个 session。
+- Cline：自动批准的命令跑 30 秒也通知；Perplexity：卡住即进 Needs attention，不猜。
+- waxell：每天 200+ 审批 → 批量批准 → 六个月后无人真看；Replit 删库。批量与 digest 必须保留每条的风险标签，不可逆项不进 digest。
+- Cursor 字符串 denylist 被四种方式绕过后放弃 → 按效果分类。
