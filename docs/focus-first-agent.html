@@ -1,0 +1,550 @@
+<title>Focus-First Agent Framework</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F3F5F4; --surface:#FFFFFF; --sunken:#E9EDEB; --ink:#172220; --muted:#5F6E6A; --line:#D5DDDA;
+  --accent:#0E6B67; --accent-soft:#D8ECEA; --warn:#C4700F; --warn-soft:#F6E5CF; --crit:#B42A26; --crit-soft:#F5DAD8; --good:#2F7A4E; --good-soft:#D9EBDF;
+  --working:#9AA7A3;
+  --display:"Manrope","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+  --body:"IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+  --mono:"IBM Plex Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1614; --surface:#182120; --sunken:#121A18; --ink:#E4EBE8; --muted:#93A39E; --line:#2A3634;
+    --accent:#5CC1BB; --accent-soft:#163532; --warn:#E39A3F; --warn-soft:#3A2A14; --crit:#E1655F; --crit-soft:#3D1A18; --good:#6CC08B; --good-soft:#163524;
+    --working:#5D6B67;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1614; --surface:#182120; --sunken:#121A18; --ink:#E4EBE8; --muted:#93A39E; --line:#2A3634;
+  --accent:#5CC1BB; --accent-soft:#163532; --warn:#E39A3F; --warn-soft:#3A2A14; --crit:#E1655F; --crit-soft:#3D1A18; --good:#6CC08B; --good-soft:#163524;
+  --working:#5D6B67;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.page{display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;max-width:1120px;margin:0 auto;padding:40px 28px 96px}
+nav.toc{position:sticky;top:24px;align-self:start;font-size:13px;line-height:1.5}
+nav.toc .eyebrow{font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+nav.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--line)}
+nav.toc a{display:block;padding:5px 0 5px 14px;color:var(--muted);border-bottom:0;border-left:2px solid transparent;margin-left:-1px}
+nav.toc a:hover{color:var(--ink)}
+nav.toc a.sub{padding-left:26px;font-size:12.5px}
+main{max-width:76ch;min-width:0}
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:40px;line-height:1.12;font-weight:800;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700;margin-top:64px;padding-top:24px;border-top:1px solid var(--line);scroll-margin-top:24px}
+h3{font-size:17px;font-weight:700;margin-top:32px;scroll-margin-top:24px}
+h4{font-size:15px;font-weight:600;margin-top:20px}
+p{margin:12px 0}
+.lede{font-size:18px;line-height:1.6;color:var(--ink);margin-top:14px}
+.eyebrow{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.meta{color:var(--muted);font-size:13px;margin-top:10px}
+.thesis{margin:28px 0 0;padding:20px 22px;background:var(--accent-soft);border-left:3px solid var(--accent);font-family:var(--display);font-weight:600;font-size:17px;line-height:1.55}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:5px 0}
+li::marker{color:var(--muted)}
+strong{font-weight:600}
+code{font-family:var(--mono);font-size:.88em;background:var(--sunken);padding:1px 5px;border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--sunken);border:1px solid var(--line);padding:16px 18px;overflow-x:auto;margin:14px 0;border-radius:4px}
+pre code{background:none;padding:0;font-size:inherit}
+.c{color:var(--muted)}
+.k{color:var(--accent)}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.5}
+th{font-family:var(--display);font-weight:700;text-align:left;font-size:12px;letter-spacing:.04em;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.src{color:var(--muted);font-size:12.5px}
+/* inbox exhibit */
+.exhibit{margin:36px 0 8px}
+.exhibit .cap{font-size:12.5px;color:var(--muted);margin-top:8px}
+.inbox{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.inbox-bar{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted);background:var(--sunken)}
+.inbox-bar .title{font-family:var(--display);font-weight:700;color:var(--ink);letter-spacing:.02em}
+.lights{display:flex;gap:10px;margin-left:auto;align-items:center}
+.lights span{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot.working{background:var(--working)} .dot.blocked{background:var(--warn);opacity:.6} .dot.needs{background:var(--warn)} .dot.done{background:var(--good)}
+.item{padding:16px 18px 14px;display:grid;grid-template-columns:1fr auto;gap:8px 18px}
+.item .kind{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--warn)}
+.item .headline{font-family:var(--display);font-weight:700;font-size:16px;line-height:1.35;grid-column:1;margin-top:2px}
+.item .ttl{grid-column:2;grid-row:1/3;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.6}
+.ctx{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:13px;margin-top:6px;padding:10px 12px;background:var(--sunken);border-radius:4px}
+.ctx b{font-family:var(--mono);font-weight:500;font-size:11.5px;color:var(--muted);letter-spacing:.03em;padding-top:2px}
+.opts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.opt{font-family:var(--body);font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);cursor:default;display:inline-flex;gap:8px;align-items:baseline}
+.opt kbd{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px}
+.opt.rec{border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.opt .cons{color:var(--muted);font-weight:400;font-size:12px}
+.fallback{grid-column:1/-1;font-size:12.5px;color:var(--muted);margin-top:4px}
+/* cards */
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.card h4{margin-top:0;font-size:14px}
+.card p{font-size:13.5px;margin:8px 0 0;color:var(--muted)}
+.card .n{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.01em;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.stat{padding:14px 16px;border-top:2px solid var(--accent);background:var(--surface);border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0 0 6px 6px}
+.stat .n{font-family:var(--display);font-weight:800;font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+/* matrix */
+.matrix td{font-size:13px}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:3px;letter-spacing:.03em;white-space:nowrap}
+.tag.act{background:var(--good-soft);color:var(--good)} .tag.ask{background:var(--warn-soft);color:var(--warn)} .tag.block{background:var(--crit-soft);color:var(--crit)} .tag.n{background:var(--accent-soft);color:var(--accent)}
+/* diagram */
+figure{margin:18px 0}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
+.d-box{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.d-kernel{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+.d-sub{fill:var(--surface);stroke:var(--accent);stroke-width:1}
+.d-t{font-family:var(--display);font-weight:700;font-size:12.5px;fill:var(--ink)}
+.d-s{font-family:var(--mono);font-size:10.5px;fill:var(--muted)}
+.d-a{fill:none;stroke:var(--muted);stroke-width:1.3;marker-end:url(#arr)}
+.d-a2{fill:none;stroke:var(--accent);stroke-width:1.3;stroke-dasharray:4 3;marker-end:url(#arr2)}
+/* steps */
+.steps{list-style:none;padding:0;margin:14px 0;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);margin:0}
+.steps li::before{content:counter(s);font-family:var(--display);font-weight:800;font-size:18px;color:var(--accent);line-height:1.3}
+.steps li:last-child{border-bottom:0}
+.steps b{font-family:var(--display);font-weight:700}
+.sources{columns:2;column-gap:28px;font-size:12.5px;line-height:1.5}
+.sources li{break-inside:avoid;margin:0 0 6px;padding-left:0;list-style:none}
+.sources a{word-break:break-all;color:var(--muted);border-bottom-color:transparent}
+.sources a:hover{color:var(--accent)}
+@media (max-width:860px){
+  .page{grid-template-columns:1fr;gap:24px;padding:24px 18px 64px}
+  nav.toc{position:static}
+  nav.toc ol{flex-direction:row;flex-wrap:wrap;border-left:0;gap:4px 12px}
+  nav.toc a{padding:3px 0;border-left:0;margin:0} nav.toc a.sub{display:none}
+  h1{font-size:32px}
+  .grid2,.stats{grid-template-columns:1fr}
+  .sources{columns:1}
+  .item{grid-template-columns:1fr} .item .ttl{grid-column:1;grid-row:auto;text-align:left}
+}
+@media (prefers-reduced-motion: no-preference){
+  .dot.needs{animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 45%,transparent)}50%{box-shadow:0 0 0 5px transparent}}
+}
+</style>
+
+<div class="page">
+<nav class="toc" aria-label="目录">
+  <div class="eyebrow">Focus-First Agent</div>
+  <ol>
+    <li><a href="#thesis">命题</a></li>
+    <li><a href="#research">调研发现</a></li>
+    <li><a href="#gaps" class="sub">现有框架的空白</a></li>
+    <li><a href="#goals">设计目标</a></li>
+    <li><a href="#arch">架构</a></li>
+    <li><a href="#abstractions" class="sub">六个核心抽象</a></li>
+    <li><a href="#ar" class="sub">AttentionRequest</a></li>
+    <li><a href="#policy">决策策略</a></li>
+    <li><a href="#scheduler">调度器</a></li>
+    <li><a href="#lifecycle">生命周期</a></li>
+    <li><a href="#surfaces">呈现面</a></li>
+    <li><a href="#adapters">适配器</a></li>
+    <li><a href="#metrics">指标</a></li>
+    <li><a href="#risks">风险</a></li>
+    <li><a href="#roadmap">路线图</a></li>
+    <li><a href="#sources">来源</a></li>
+  </ol>
+</nav>
+
+<main>
+<header>
+  <div class="eyebrow">调研 + 框架设计 · v0.1 · 2026-09-03</div>
+  <h1 style="margin-top:10px">Focus-First Agent Framework</h1>
+  <p class="lede">一个把<strong>人的注意力</strong>当作最稀缺调度资源的 Agent 框架。Agent 的断点不是人的断点，这个框架负责把两者对齐。</p>
+
+  <div class="exhibit">
+    <div class="inbox" aria-label="异常收件箱示例">
+      <div class="inbox-bar">
+        <span class="title">Inbox</span><span>1 项需要你 · 2 项进 digest</span>
+        <div class="lights" aria-label="Agent 状态">
+          <span><i class="dot working"></i>auth-migrate</span>
+          <span><i class="dot needs"></i>db-cleanup</span>
+          <span><i class="dot done"></i>docs-sync</span>
+        </div>
+      </div>
+      <div class="item">
+        <span class="kind">approval · P1 · 不可逆</span>
+        <div class="ttl">TTL 3h 41m<br>无回应 → 保留</div>
+        <div class="headline">要删除 3 个 2023 年的 migration 文件</div>
+        <div class="ctx">
+          <b>you_were</b><span>在 review PR #812</span>
+          <b>i_did</b><span>迁移了 auth 路由，测试 41/41 通过</span>
+          <b>i_need</b><span>确认能否删除 db/migrations/2023_*.sql</span>
+          <b>blast_radius</b><span>本地与 CI；不影响生产</span>
+        </div>
+        <div class="opts">
+          <span class="opt rec"><kbd>1</kbd>删除 <span class="cons">CI 重跑 12 min</span></span>
+          <span class="opt"><kbd>2</kbd>保留并加 deprecated 注释</span>
+          <span class="opt"><kbd>3</kbd>任务结束时再问</span>
+        </div>
+        <div class="fallback">推荐项置信度 0.8 · 本任务打断预算 1/2 · 已延迟到你的断点（PR #812 刚提交）</div>
+      </div>
+    </div>
+    <div class="cap">框架的最小可见单元：一条 AttentionRequest 在收件箱中的样子。人看到的是"为什么需要我、不答会怎样、按哪个键"，而不是 transcript。</div>
+  </div>
+</header>
+
+<h2 id="thesis">命题</h2>
+<div class="thesis">现有 Agent 框架优化 token、时延和正确率，人的注意力只是副作用。所有主流 SDK 都是逐条打断、无限等待、无预算、无时机感。FFA 在 Agent 运行时和人之间插入一个注意力内核，让每一次"需要你"都经过调度。</div>
+<p>三条设计信念，全部来自调研：</p>
+<ul>
+  <li><strong>打断是效用计算，不是默认行为。</strong>自主执行、发起对话、什么都不做，三者由"推迟代价 vs 打断代价"决定，并随人的状态变化（Horvitz 1999/2003）。</li>
+  <li><strong>可逆性比风险等级更有杠杆。</strong>生产环境仅 0.8% 的动作不可逆（Anthropic）；可逆动作应当直接做并记录回滚点，用事后审计替代事前审批。</li>
+  <li><strong>人看结论和证据，不看过程。</strong>子 Agent 只返回蒸馏结论、diff-first、预览优先，是所有成熟产品收敛出的同一原则。</li>
+</ul>
+
+<h2 id="research">调研发现</h2>
+<p>四路并行调研：HCI 打断科学、Agent 产品实践、HITL 框架与协议、多 Agent 监督与 ambient agents。完整材料在项目 <code>docs/research/</code>。</p>
+
+<div class="stats">
+  <div class="stat"><div class="n">93%</div><div class="l">权限提示被用户批准，审批已退化为仪式（Anthropic 遥测）</div></div>
+  <div class="stat"><div class="n">1/3</div><div class="l">危险命令被人漏掉；分类器抓到 89%，人只抓到 13.6%</div></div>
+  <div class="stat"><div class="n">+441%</div><div class="l">review 时间中位数增幅，2.2 万开发者样本（Faros AI）</div></div>
+  <div class="stat"><div class="n">10–15 min</div><div class="l">程序员被打断后重新开始编辑所需时间（Parnin & Rugaber）</div></div>
+  <div class="stat"><div class="n">91.5%</div><div class="l">人-Agent 错位需要人显式纠正，20,574 个真实会话（arXiv 2605.29442）</div></div>
+  <div class="stat"><div class="n">−19%</div><div class="l">资深开发者用 AI 的实际速度变化，自评却是 +20%（METR 2025）</div></div>
+</div>
+
+<h3>学术研究给出的硬约束</h3>
+<div class="grid2">
+  <div class="card"><h4>打断有时机</h4><p>defer-to-breakpoint：推迟到子任务边界投递，恢复更快、挫败更少，粗粒度断点优于细粒度（Iqbal & Bailey 2008/2010）。FlowLight 用键鼠活动推断可打扰性，中断减少 46%。</p></div>
+  <div class="card"><h4>周边 vs 中心</h4><p>平静技术：信息驻留注意力周边，需要时才移到中心（Weiser & Brown 1996）。可扫视性是关键属性；状态用颜色和位置编码，不用文字通知。</p></div>
+  <div class="card"><h4>一人能管几个 Agent 有公式</h4><p>FO ≈ NT/IT + 1，忽视时间除以交互时间（Olsen & Goodrich）。操作员利用率超过 70% 后绩效衰退（Cummings & Guerlain 2007）。提高 fan-out 的两条路：更自主，或更好的请求界面。</p></div>
+  <div class="card"><h4>完全自动化最危险</h4><p>out-of-the-loop 导致情境意识下降、接管更慢（Endsley & Kiris 1995）。目标是信任校准而非信任最大化（Lee & See 2004）。注意力残留：切换前收尾能清除残留（Leroy 2009）。</p></div>
+</div>
+
+<h3>产品实践已经收敛的模式</h3>
+<div class="tbl"><table>
+<tr><th>模式</th><th>谁在用</th></tr>
+<tr><td>给"为什么需要我"打标签，而非一律 waiting for input</td><td>Devin <code>waiting_for_user / waiting_for_approval</code>；Warp Complete/Request/Error；Claude Code <code>permission_prompt / idle_prompt / agent_needs_input / agent_completed</code></td></tr>
+<tr><td>延迟触发通知，避免抢占</td><td>Claude Code 权限提示等 6 秒、空闲等 60 秒；Desktop 仅在未查看该会话时发 OS 通知；Warp 子 agent 只汇总到父级</td></tr>
+<tr><td>提问前置到计划期，结构化为多选带推荐项</td><td>Claude Code <code>AskUserQuestion</code>；Jules 不回应即自动批准</td></tr>
+<tr><td>硬规则优先、分类器兜底</td><td>Claude Code auto mode，2026-08-14 起默认</td></tr>
+<tr><td>PR 是唯一交接面，Agent 自己照看 PR 到合并</td><td>Cursor Cloud（2026-08）、Devin 睡眠后被 CI 失败或 @ 唤醒</td></tr>
+<tr><td>统一收件箱 / 异常队列</td><td>GitHub Mission Control、Cursor 3 Agents Window、Codex App、Warp 通知邮箱、LangChain agent-inbox、OpenClaw 带 TTL 的 attention state</td></tr>
+<tr><td>三级信任协议 notify / question / review</td><td>LangChain ambient agents</td></tr>
+</table></div>
+
+<h3 id="gaps">现有框架的八个空白</h3>
+<p>逐个核对 LangGraph、HumanLayer、OpenAI Agents SDK、Claude Agent SDK、Vercel AI SDK、Microsoft Agent Framework、CrewAI、Temporal、AG-UI、A2A、MCP 后发现：</p>
+<ol>
+  <li>决策请求没有统一 schema：question、options、default、deadline、consequence、reversibility 从未作为一个对象出现。</li>
+  <li>没有批处理、digest、静默时段、合并同类审批。</li>
+  <li>SDK 层 interrupt 无限等待，没有"超时选安全默认"。只有 Temporal 一类持久工作流有 timeout。</li>
+  <li>信任增长没有量化模型；OpenAI 的 <code>always_approve</code> 和 Claude 的 <code>PermissionRequest</code> 追加规则都是手动。</li>
+  <li>没有 PagerDuty 式升级阶梯对接 Agent 事件。</li>
+  <li>MCP 已有 <code>readOnlyHint / destructiveHint</code>，但没有框架用它驱动 ask-vs-act。</li>
+  <li>面向人的可观测性仍是日志；没有 plan-of-record、偏差、"what I need from you"的结构化事件。</li>
+  <li><strong>注意力预算本身不被建模。</strong>没有框架把"本小时最多打断 N 次"或"用户当前状态"作为调度输入。</li>
+</ol>
+<p>FFA 的每个组件都对应至少一个空白。</p>
+
+<h2 id="goals">设计目标</h2>
+<div class="tbl"><table>
+<tr><th>目标</th><th>指标</th><th>起点</th><th>目标值</th></tr>
+<tr><td>少打断</td><td>每任务人工干预次数</td><td class="num">5.4（Anthropic 内部）</td><td class="num">≤ 2</td></tr>
+<tr><td>打断有意义</td><td>橡皮章率：3 秒内批准的占比</td><td class="num">≈ 93% 一律批准</td><td>收件箱项 ≥ 60% 被认真处理</td></tr>
+<tr><td>不淹没</td><td>每日主动上浮条数</td><td>无上限</td><td class="num">≤ 5</td></tr>
+<tr><td>恢复快</td><td>每次请求的交互时间 IT</td><td>需重建上下文</td><td class="num">中位数 ≤ 90 秒</td></tr>
+<tr><td>人不过载</td><td>人的利用率</td><td>未测</td><td class="num">&lt; 70%</td></tr>
+<tr><td>只审高风险</td><td>需人工 review 的交付占比</td><td class="num">100%</td><td class="num">≈ 20%，覆盖 ≈ 70% 风险</td></tr>
+<tr><td>不漏危险</td><td>P0 不可逆动作被自动放行</td><td>—</td><td class="num">0</td></tr>
+</table></div>
+
+<h2 id="arch">架构</h2>
+<figure>
+<svg viewBox="0 0 960 400" role="img" aria-label="FFA 架构：Agent 运行时经适配器产生 AttentionRequest，进入注意力内核，由人的状态模型调节，输出到呈现面，人的反馈写入账本">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker>
+  </defs>
+  <!-- runtimes -->
+  <rect class="d-box" x="16" y="60" width="150" height="150" rx="5"/>
+  <text class="d-t" x="30" y="84">Agent 运行时</text>
+  <text class="d-s" x="30" y="108">Claude Code / SDK</text>
+  <text class="d-s" x="30" y="126">LangGraph</text>
+  <text class="d-s" x="30" y="144">OpenAI Agents</text>
+  <text class="d-s" x="30" y="162">MCP · A2A</text>
+  <text class="d-s" x="30" y="180">Temporal</text>
+  <!-- adapters -->
+  <rect class="d-box" x="196" y="96" width="112" height="78" rx="5"/>
+  <text class="d-t" x="210" y="122">适配器</text>
+  <text class="d-s" x="210" y="142">event → AR</text>
+  <text class="d-s" x="210" y="158">decision → resume</text>
+  <!-- kernel -->
+  <rect class="d-kernel" x="338" y="40" width="296" height="190" rx="6"/>
+  <text class="d-t" x="354" y="66">Attention Kernel</text>
+  <rect class="d-sub" x="354" y="80" width="126" height="60" rx="4"/>
+  <text class="d-t" x="366" y="102">Policy</text><text class="d-s" x="366" y="120">ask vs act</text>
+  <rect class="d-sub" x="492" y="80" width="126" height="60" rx="4"/>
+  <text class="d-t" x="504" y="102">Scheduler</text><text class="d-s" x="504" y="120">断点·合并·渠道</text>
+  <rect class="d-sub" x="354" y="152" width="126" height="60" rx="4"/>
+  <text class="d-t" x="366" y="174">Budget</text><text class="d-s" x="366" y="192">任务级·日级</text>
+  <rect class="d-sub" x="492" y="152" width="126" height="60" rx="4"/>
+  <text class="d-t" x="504" y="174">Timeout</text><text class="d-s" x="504" y="192">TTL → 安全默认</text>
+  <!-- surfaces -->
+  <rect class="d-box" x="664" y="60" width="150" height="150" rx="5"/>
+  <text class="d-t" x="678" y="84">呈现面</text>
+  <text class="d-s" x="678" y="108">周边状态灯</text>
+  <text class="d-s" x="678" y="126">异常收件箱</text>
+  <text class="d-s" x="678" y="144">Digest</text>
+  <text class="d-s" x="678" y="162">push · Slack</text>
+  <text class="d-s" x="678" y="180">transcript（折叠）</text>
+  <!-- human -->
+  <rect class="d-box" x="844" y="96" width="100" height="78" rx="5"/>
+  <text class="d-t" x="858" y="122">人</text>
+  <text class="d-s" x="858" y="142">决策 · 撤销</text>
+  <text class="d-s" x="858" y="158">忽略 · 驳回</text>
+  <!-- lower row -->
+  <rect class="d-box" x="338" y="280" width="140" height="70" rx="5"/>
+  <text class="d-t" x="352" y="304">HumanState</text>
+  <text class="d-s" x="352" y="322">FOCUS · BREAKPOINT</text>
+  <text class="d-s" x="352" y="338">IDLE · AWAY</text>
+  <rect class="d-box" x="494" y="280" width="140" height="70" rx="5"/>
+  <text class="d-t" x="508" y="304">Ledger</text>
+  <text class="d-s" x="508" y="322">信任账本 · 指标</text>
+  <text class="d-s" x="508" y="338">阈值学习</text>
+  <rect class="d-box" x="16" y="280" width="292" height="70" rx="5"/>
+  <text class="d-t" x="30" y="304">TaskCard → Plan-of-record → EvidencePacket</text>
+  <text class="d-s" x="30" y="322">跨运行时共享的持久对象</text>
+  <text class="d-s" x="30" y="338">前置提问 · 只报偏差 · 只交证据</text>
+  <!-- arrows -->
+  <path class="d-a" d="M166 135 H194"/>
+  <path class="d-a" d="M308 135 H336"/>
+  <path class="d-a" d="M634 135 H662"/>
+  <path class="d-a" d="M814 135 H842"/>
+  <path class="d-a2" d="M408 278 V232"/>
+  <path class="d-a2" d="M894 176 V315 H636"/>
+  <path class="d-a2" d="M564 278 V232"/>
+  <path class="d-a2" d="M162 278 V190 H166"/>
+  <text class="d-s" x="700" y="308">acted / dismissed / ignored / undone</text>
+  <text class="d-s" x="420" y="256">调节打断成本</text>
+</svg>
+<figcaption>所有"需要人"的事件先变成 AttentionRequest，再由内核决定要不要、何时、经何渠道送到人面前，或者不送。人的每次反应写回账本，校准下一次决策。</figcaption>
+</figure>
+
+<h3 id="abstractions">六个核心抽象</h3>
+<div class="tbl"><table>
+<tr><th>抽象</th><th>是什么</th><th>填补的空白</th></tr>
+<tr><td><strong>TaskCard</strong></td><td>委派时一次写清：goal、scope、constraints、done_criteria、risk_class，以及一份 <em>attention_contract</em>（本任务打断预算、deadline、允许渠道、拿不准时是"推荐并继续"还是"问并等"）。</td><td>#7、#8</td></tr>
+<tr><td><strong>AttentionRequest</strong></td><td>框架的"系统调用"。任何 SDK 的 interrupt、approval、elicitation、notification 都先翻译成它。</td><td>#1</td></tr>
+<tr><td><strong>AttentionKernel</strong></td><td>Policy、Scheduler、Budget、Timeout 四个子模块，按顺序处理每个 AR。</td><td>#2、#3、#5、#8</td></tr>
+<tr><td><strong>HumanStateModel</strong></td><td>本地推断四态 FOCUS / BREAKPOINT / IDLE / AWAY。信号：键鼠活跃度、前台应用、日历、显式 <code>/focus</code>、上次打开收件箱时间。只输出枚举，不存原始活动。</td><td>#8</td></tr>
+<tr><td><strong>EvidencePacket</strong></td><td>任务收尾唯一交付物：结论、变更摘要、验证证据、风险标签、我做的假设、未决问题、回滚方式。由独立 verifier 子 Agent 打标签。</td><td>#7</td></tr>
+<tr><td><strong>AttentionLedger</strong></td><td>每个 AR 的生命周期：发出、投递时的状态与渠道、结果、耗时。同时是信任账本和指标源。</td><td>#4</td></tr>
+</table></div>
+
+<h3 id="ar">AttentionRequest schema</h3>
+<pre><code>{
+  "id": "ar_01J…", "task_id": "t_42", "agent_id": "claude-code:worktree-3",
+  <span class="k">"kind"</span>: "approval",              <span class="c">// notify | question | approval | review | escalation</span>
+  <span class="k">"headline"</span>: "要删除 3 个旧 migration 文件，不可逆",   <span class="c">// ≤ 120 字符：为什么需要你</span>
+  <span class="k">"context"</span>: {                     <span class="c">// 恢复上下文，消除注意力残留</span>
+    "you_were": "在 review PR #812",
+    "i_did":    "迁移了 auth 路由，测试 41/41 通过",
+    "i_need":   "确认能否删除 2023 年的 3 个 migration",
+    "blast_radius": "db/migrations/2023_*.sql，影响本地与 CI，不影响生产"
+  },
+  <span class="k">"options"</span>: [
+    { "id": "delete", "label": "删除", "recommended": true, "consequence": "CI 需重新跑 12 min" },
+    { "id": "keep",   "label": "保留并加 deprecated 注释" },
+    { "id": "later",  "label": "先跳过，任务结束时再问" }
+  ],
+  <span class="k">"default"</span>: { "option_id": "keep", "apply_after": "PT30M" },   <span class="c">// 无人回应时的安全默认</span>
+  <span class="k">"risk"</span>: { "level": "P1", "reversible": false, "scope": ["fs"] },
+  <span class="k">"urgency"</span>: "soon",               <span class="c">// now | soon | whenever</span>
+  "cost_estimate": { "interaction_seconds": 40 },
+  "confidence": 0.8,               <span class="c">// Agent 对推荐项的置信度</span>
+  <span class="k">"ttl"</span>: "PT4H", <span class="k">"on_expire"</span>: "apply_default",   <span class="c">// apply_default | block | escalate</span>
+  <span class="k">"batch_key"</span>: "fs.delete:db/migrations",        <span class="c">// 同 key 合并成一次决策</span>
+  "evidence": ["diff://…", "log://test-run-88"]
+}</code></pre>
+<p>高亮字段是现有框架中集体缺席的：<code>default</code> 与 <code>on_expire</code> 保证永不无限阻塞，<code>batch_key</code> 让 12 次文件写入变成一次批准，<code>context</code> 四行让人不必回忆自己在做什么。</p>
+
+<h2 id="policy">决策策略：ask vs act</h2>
+<p>评估顺序借鉴 Claude Agent SDK 的六步权限模型，加入账本和效用两层：</p>
+<pre><code>硬 deny 规则 → 硬 ask 规则 → 信任账本（自动放行 / 自动拒绝） → 效用计算 → 分类器兜底 → 默认 ask</code></pre>
+
+<h3>风险 × 可逆性矩阵</h3>
+<div class="tbl"><table class="matrix">
+<tr><th></th><th>可逆</th><th>不可逆</th></tr>
+<tr><td><strong>范围内，低爆炸半径</strong></td><td><span class="tag act">ACT</span> 记录回滚点，进 digest</td><td><span class="tag ask">ASK</span> 带安全默认，延迟到断点，可合并</td></tr>
+<tr><td><strong>范围外或外部副作用</strong></td><td><span class="tag act">ACT</span> + <span class="tag n">notify(soon)</span></td><td><span class="tag ask">ASK(now)</span> 阻塞，超时升级</td></tr>
+<tr><td><strong>P0：生产、资金、删除、对外发消息</strong></td><td><span class="tag ask">ASK(now)</span></td><td><span class="tag block">ASK(now)</span> 不可设默认放行，超时即 block</td></tr>
+</table></div>
+
+<h3>效用计算</h3>
+<pre><code>surface_now  if  P(need_human) × Cost(wrong)  &gt;  Cost(interrupt | state) + Cost(resume)
+defer        if  上式不成立 且 存在安全默认
+act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></pre>
+<p>打断成本随状态取值：FOCUS 取 Parnin 的 10 到 15 分钟量级，BREAKPOINT 取 1 到 2 分钟，AWAY 取渠道成本。阈值按（用户，动作类）从账本学习。</p>
+
+<h3>信任账本升级规则</h3>
+<ul>
+  <li>键是（用户，动作类），例如 <code>fs.write:src/**</code>、<code>shell:pnpm test</code>、<code>git.push:feature/*</code>。</li>
+  <li>连续 10 次 approve 且 0 次 undo，自动升为 auto_allow，并在 digest 里告知"已自动放行，可撤销"。</li>
+  <li>任何一次 reject 或 undo 立即降级并重置计数。</li>
+  <li>P0 动作类永不自动放行。账本对用户可见可编辑，一行命令回到"全部询问"。</li>
+</ul>
+
+<h2 id="scheduler">调度器行为</h2>
+<div class="tbl"><table>
+<tr><th>行为</th><th>规则</th><th>依据</th></tr>
+<tr><td>断点延迟</td><td>urgency 不为 now 的 AR 等待人的下一个断点，最长等到 ttl。断点优先粗粒度事件：commit、测试结束、PR 打开、会议结束、切到收件箱。</td><td class="src">Iqbal & Bailey</td></tr>
+<tr><td>合并</td><td>同 batch_key 的 AR 合并为一次决策。</td><td class="src">审批疲劳研究</td></tr>
+<tr><td>Digest</td><td>ACT 项与进度每 30 分钟或每个断点汇总一次，不弹窗，带一键 undo。</td><td class="src">平静技术</td></tr>
+<tr><td>静默时段</td><td><code>/focus 45m</code> 期间只放行 now 级 P0/P1。</td><td class="src">FlowLight</td></tr>
+<tr><td>预算</td><td>任务预算耗尽后 question 降级为"推荐并继续，记入假设"；日预算耗尽后全部进 digest。</td><td class="src">TianPan.co 每日 3 到 5 条</td></tr>
+<tr><td>渠道选择</td><td>FOCUS 只更新周边状态灯；BREAKPOINT 进收件箱；AWAY 且 urgency 为 now 才 push 或 Slack。</td><td class="src">Horvitz 换渠道</td></tr>
+<tr><td>升级阶梯</td><td>周边 → 收件箱 → push → 第二责任人（团队模式），每级有等待时间。</td><td class="src">PagerDuty 模式</td></tr>
+<tr><td>TTL 清除</td><td>到期执行 on_expire，从收件箱移除，写账本。</td><td class="src">OpenClaw attention state</td></tr>
+<tr><td>并发闸门</td><td>估算 FO = NT/IT + 1；人的利用率超过 70% 时暂停派发新任务，只收尾。</td><td class="src">Cummings & Guerlain</td></tr>
+</table></div>
+
+<h2 id="lifecycle">任务生命周期</h2>
+<ol class="steps">
+  <li><div><b>Intake</b>：填 TaskCard。框架用一次结构化表单把所有可预见的决策前置：多选、推荐项、"不回答则按推荐执行"。</div></li>
+  <li><div><b>Plan-of-record</b>：计划是对象不是文本。执行期只有偏离计划才生成 question 类 AR，按计划走的不打扰。</div></li>
+  <li><div><b>Execute</b>：默认静默。SDK 事件经适配器变成 AR 进内核。周边状态灯实时反映 working / blocked / needs-you / done。</div></li>
+  <li><div><b>Verify</b>：独立 verifier 跑 done_criteria，打风险标签，生成证据。不通过则回到上一步，不打扰人。</div></li>
+  <li><div><b>Deliver</b>：EvidencePacket 作为 review 类 AR 进收件箱。P2/P3 且验证通过的可配置为自动合并加 digest 通知。</div></li>
+  <li><div><b>Learn</b>：账本回写阈值、信任、渠道偏好。</div></li>
+</ol>
+
+<h2 id="surfaces">呈现面</h2>
+<div class="grid2">
+  <div class="card"><h4>周边状态</h4><p>每个 Agent 一个可扫视的状态点，放在菜单栏、终端状态行或 IDE 状态栏。灰是 working，黄是 blocked，橙是 needs-you，绿是 done。绝不弹窗。</p></div>
+  <div class="card"><h4>异常收件箱</h4><p>唯一需要人"看"的地方。排序按 urgency、deadline、风险、价值。每项是 headline、四行 context、带默认高亮的选项、单键回答，并显示不回答会发生什么和剩余 TTL。</p></div>
+  <div class="card"><h4>Digest</h4><p>一屏摘要：已自动放行的可逆动作（带 undo）、进度、账本升级告知。周期性推送保住情境意识。</p></div>
+  <div class="card"><h4>渠道与 transcript</h4><p>终端、桌面、手机 push、Slack。同一 AR 跨渠道同步，任一处回答即全局解决。transcript 降级为审计视图，默认折叠。</p></div>
+</div>
+
+<h2 id="adapters">适配器</h2>
+<p>不重造运行时。每个来源只做两件事：把事件翻译成 AR，把 AR 决议翻译回恢复调用。</p>
+<div class="tbl"><table>
+<tr><th>来源</th><th>输入映射到 AR</th><th>决议映射回运行时</th></tr>
+<tr><td>Claude Agent SDK / Claude Code</td><td><code>PreToolUse</code>、<code>PermissionRequest</code> → approval；<code>AskUserQuestion</code> → question；<code>Notification</code> 的 idle_prompt / agent_needs_input / agent_completed → notify 或 review；<code>Stop</code> → review</td><td><code>permissionDecision</code> 加追加规则；<code>canUseTool</code> 回调</td></tr>
+<tr><td>LangGraph</td><td><code>interrupt(payload)</code>、<code>HITLRequest</code> 按 allowed_decisions 映射</td><td><code>Command(resume=…)</code></td></tr>
+<tr><td>OpenAI Agents SDK</td><td><code>RunResult.interruptions</code> → approval</td><td><code>RunState.approve / reject</code></td></tr>
+<tr><td>MCP</td><td><code>elicitation</code> → question；<code>destructiveHint / readOnlyHint</code> 直接喂给 Policy 的可逆性判断</td><td>elicitation 结果</td></tr>
+<tr><td>A2A</td><td><code>input-required</code> → question</td><td>追加 message</td></tr>
+<tr><td>Temporal / Inngest</td><td>signal 等待 → AR；TTL 用持久 timer 实现</td><td>signal</td></tr>
+</table></div>
+
+<h2 id="metrics">指标</h2>
+<div class="tbl"><table>
+<tr><th>指标</th><th>定义</th></tr>
+<tr><td><code>interventions_per_task</code></td><td>人主动纠正次数</td></tr>
+<tr><td><code>surfaces_per_day</code></td><td>主动上浮条数，目标 ≤ 5</td></tr>
+<tr><td><code>rubber_stamp_rate</code></td><td>3 秒内批准的占比，越低越好</td></tr>
+<tr><td><code>acted / dismissed / ignored / expired</code></td><td>AR 结果分布，用于学阈值</td></tr>
+<tr><td><code>median_interaction_seconds</code></td><td>IT 中位数</td></tr>
+<tr><td><code>neglect_time</code></td><td>无人干预下 Agent 持续产出时长</td></tr>
+<tr><td><code>human_utilization</code></td><td>处理 AR 时间 / 工作时间，保持在 70% 以下</td></tr>
+<tr><td><code>review_gated_share</code></td><td>需人工 review 的交付占比</td></tr>
+<tr><td><code>undo_rate</code></td><td>自动放行后被撤销比例，信任校准信号</td></tr>
+<tr><td><code>p0_auto_pass</code></td><td>必须为 0</td></tr>
+<tr><td><code>false_alarm_rate</code></td><td>被 dismiss 的 AR 占比</td></tr>
+</table></div>
+
+<h2 id="risks">风险与对策</h2>
+<div class="tbl"><table>
+<tr><th>风险</th><th>对策</th></tr>
+<tr><td><strong>Out-of-the-loop</strong>：自动化太多，人失去情境意识</td><td>周期性一屏 digest；关键阶段保持"提议 + 确认"；EvidencePacket 强制列出假设</td></tr>
+<tr><td><strong>自动化自满</strong>：信任账本让人不再看</td><td>undo_rate 与 rubber_stamp_rate 触发"抽查"AR；账本升级在 digest 中显式告知</td></tr>
+<tr><td><strong>过度抑制</strong>：把真正紧急的压进 digest</td><td>P0/P1 永远可穿透静默；on_expire 为 block 时不可被预算覆盖</td></tr>
+<tr><td><strong>状态推断隐私</strong></td><td>全部本地计算，只输出四态枚举，不存原始活动</td></tr>
+<tr><td><strong>Agent 虚报进度</strong>，调研中上升最快的错位</td><td>verifier 独立于执行 Agent；done_criteria 必须可机器验证</td></tr>
+<tr><td><strong>多工具上下文丢失</strong></td><td>TaskCard、plan-of-record、ledger 是跨运行时共享的持久对象</td></tr>
+</table></div>
+
+<h2 id="roadmap">路线图</h2>
+<div class="tbl"><table>
+<tr><th>阶段</th><th>内容</th><th>验证</th></tr>
+<tr><td><strong>P0</strong>，2 周</td><td>AR schema；内核库（policy、scheduler、budget、timeout）；Claude Code hooks 适配器；CLI 收件箱；合并 + 断点延迟 + 超时默认</td><td>自用 1 周，对比 interventions_per_task 与 surfaces_per_day</td></tr>
+<tr><td><strong>P1</strong></td><td>HumanStateModel（macOS 前台应用 + 空闲时间 + <code>/focus</code>）；digest；信任账本</td><td>rubber_stamp_rate、undo_rate</td></tr>
+<tr><td><strong>P2</strong></td><td>EvidencePacket + verifier 子 Agent；并发闸门；LangGraph 与 MCP 适配器</td><td>review_gated_share、human_utilization</td></tr>
+<tr><td><strong>P3</strong></td><td>阈值学习；Slack 与手机渠道；团队模式升级阶梯</td><td>false_alarm_rate、time_to_first_decision</td></tr>
+</table></div>
+
+<h3>待确认的假设</h3>
+<ul>
+  <li>首个运行时以 Claude Code / Claude Agent SDK 为主，hooks 与权限模型最完整，适配成本最低。</li>
+  <li>首个用户是单个开发者同时跑 2 到 5 个 Agent 的场景；团队升级阶梯放到 P3。</li>
+  <li>形态是独立守护进程加适配器，而不是某个 IDE 的插件，以便跨运行时共享账本。</li>
+</ul>
+
+<h2 id="sources">来源</h2>
+<h4>打断科学与人因学</h4>
+<ul class="sources">
+<li><a href="https://blog.ninlabs.com/blog/programmer-interrupted/">Parnin, Programmer Interrupted</a></li>
+<li><a href="https://link.springer.com/article/10.1007/s11219-010-9104-9">Parnin & Rugaber 2010</a></li>
+<li><a href="https://interruptions.net/literature/Iqbal-CHI08.pdf">Iqbal & Bailey, CHI 2008</a></li>
+<li><a href="https://dl.acm.org/doi/abs/10.1145/1879831.1879833">Iqbal & Bailey, Oasis, TOCHI 2010</a></li>
+<li><a href="https://dl.acm.org/doi/10.1145/3025453.3025662">FlowLight, CHI 2017</a></li>
+<li><a href="https://erichorvitz.com/chi99horvitz.pdf">Horvitz, Principles of Mixed-Initiative UI</a></li>
+<li><a href="https://www.interruptions.net/literature/Horvitz-CACM03-full.pdf">Horvitz, Models of Attention, CACM 2003</a></li>
+<li><a href="https://calmtech.com/papers/coming-age-calm-technology">Weiser & Brown, Calm Technology</a></li>
+<li><a href="https://ideas.repec.org/a/eee/jobhdp/v109y2009i2p168-181.html">Leroy 2009, attention residue</a></li>
+<li><a href="https://journals.sagepub.com/doi/10.1518/001872095779064555">Endsley & Kiris 1995</a></li>
+<li><a href="https://journals.sagepub.com/doi/10.1518/hfes.46.1.50_30392">Lee & See 2004</a></li>
+<li><a href="https://faculty.cs.byu.edu/~crandall/papers/CrandallCummingsTRO2007_Final.pdf">Crandall & Cummings 2007, fan-out</a></li>
+<li><a href="https://journals.sagepub.com/doi/10.1518/001872007779598109">Cummings & Guerlain 2007</a></li>
+<li><a href="https://blog.oberien.de/2023/11/05/23-minutes-15-seconds.html">"23 分钟"出处考证</a></li>
+</ul>
+<h4>开发者与 Agent 研究</h4>
+<ul class="sources">
+<li><a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">METR 2025 RCT</a></li>
+<li><a href="https://metr.org/blog/2026-02-24-uplift-update/">METR 2026 更新</a></li>
+<li><a href="https://arxiv.org/abs/2605.23135">纵向研究：95 人 6 个月</a></li>
+<li><a href="https://arxiv.org/abs/2605.29442">How Coding Agents Fail Their Users</a></li>
+<li><a href="https://arxiv.org/abs/2512.14012">Professional Developers Don't Vibe, They Control</a></li>
+<li><a href="https://arxiv.org/html/2410.12361v3">Proactive Agent, ICLR 2025</a></li>
+<li><a href="https://arxiv.org/pdf/2605.05700">Proactive Coding Assistants 实证</a></li>
+<li><a href="https://arxiv.org/pdf/2602.16844">Overseeing Agents Without Constant Oversight</a></li>
+<li><a href="https://www.anthropic.com/research/measuring-agent-autonomy">Anthropic, Measuring agent autonomy</a></li>
+<li><a href="https://claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them">Anthropic, multi-agent systems</a></li>
+<li><a href="https://www.theregister.com/ai-and-ml/2026/08/06/humans-in-the-loop-miss-a-third-of-dangerous-ai-coding-agent-requests/5284236">人漏掉 1/3 危险命令</a></li>
+<li><a href="https://builtin.com/articles/ai-brain-fry-software-developers">BCG 2026, AI brain fry</a></li>
+<li><a href="https://www.flowverify.co/blog/ai-code-review-bottleneck-2026-data">review 瓶颈数据 2026</a></li>
+<li><a href="https://stackoverflow.blog/2026/05/21/coding-agents-are-giving-everyone-decision-fatigue/">Stack Overflow, decision fatigue</a></li>
+<li><a href="https://addyo.substack.com/p/the-80-problem-in-agentic-coding">Addy Osmani, the 80% problem</a></li>
+<li><a href="https://tianpan.co/blog/2026-05-13-background-agents-notification-budget-attention-economy">Notification budget</a></li>
+</ul>
+<h4>产品与框架</h4>
+<ul class="sources">
+<li><a href="https://claude.com/blog/auto-mode">Claude Code auto mode</a></li>
+<li><a href="https://code.claude.com/docs/en/hooks-guide">Claude Code hooks</a></li>
+<li><a href="https://code.claude.com/docs/en/agent-sdk/permissions">Claude Agent SDK permissions</a></li>
+<li><a href="https://code.claude.com/docs/en/remote-control">Claude Code Remote Control</a></li>
+<li><a href="https://docs.langchain.com/oss/python/langchain/human-in-the-loop">LangGraph human-in-the-loop</a></li>
+<li><a href="https://www.langchain.com/blog/introducing-ambient-agents">LangChain ambient agents</a></li>
+<li><a href="https://github.com/langchain-ai/agent-inbox">LangChain agent-inbox</a></li>
+<li><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-07-contact-humans-with-tools.md">12-Factor Agents, Factor 7</a></li>
+<li><a href="https://openai.github.io/openai-agents-python/human_in_the_loop/">OpenAI Agents SDK HITL</a></li>
+<li><a href="https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation">MCP elicitation</a></li>
+<li><a href="https://a2a-protocol.org/v0.3.0/specification/">A2A specification</a></li>
+<li><a href="https://docs.ag-ui.com/drafts/interrupts">AG-UI interrupts</a></li>
+<li><a href="https://docs.temporal.io/ai-cookbook/human-in-the-loop-python">Temporal HITL</a></li>
+<li><a href="https://learn.microsoft.com/en-us/agent-framework/agents/tools/tool-approval">Microsoft Agent Framework tool approval</a></li>
+<li><a href="https://cursor.com/changelog/08-19-26">Cursor changelog 2026-08</a></li>
+<li><a href="https://openai.com/index/introducing-the-codex-app/">Codex App</a></li>
+<li><a href="https://github.blog/changelog/2025-10-28-a-mission-control-to-assign-steer-and-track-copilot-coding-agent-tasks/">GitHub Mission Control</a></li>
+<li><a href="https://docs.devin.ai/api-reference/v3/sessions/post-organizations-sessions">Devin session states</a></li>
+<li><a href="https://docs.warp.dev/agents/capabilities/agent-notifications/">Warp agent notifications</a></li>
+<li><a href="https://openclaw.academy/blog/openclaw-control-ui-attention-workflow-main/">OpenClaw attention workflow</a></li>
+<li><a href="https://www.mindstudio.ai/blog/bike-method-ai-agent-permissions-phased-trust">Bike method, phased trust</a></li>
+<li><a href="https://nimbalyst.com/blog/best-tools-for-running-parallel-ai-coding-agents/">并行 Agent 工具评测</a></li>
+</ul>
+</main>
+</div>
