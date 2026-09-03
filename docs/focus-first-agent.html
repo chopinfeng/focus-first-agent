@@ -156,6 +156,7 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
     <li><a href="#usecases">Use case</a></li>
     <li><a href="#testing">测试方案</a></li>
     <li><a href="#bench">AttentionBench</a></li>
+    <li><a href="#experiments">实验设计</a></li>
     <li><a href="#sources">来源</a></li>
   </ol>
 </nav>
@@ -644,6 +645,35 @@ ACS        = (Interrupt + Read + Write + Rebuild + Repeat + Late) / 同式(oracl
 <tr><td>每成功任务的人力分钟</td><td>参考</td><td class="num">−40%</td><td class="num">−60%</td></tr>
 </table></div>
 <p>协议：每配置 30 任务 × 3 主策略 × 3 非合作 persona × 3 种子；报告是 Artificial Analysis 式榜单表（success、APT、读写打断拆分、ledger hit rate、VPT、ROA、precision、recall、陷阱阻止率），主图 success vs APT 散点加 Pareto 前沿，第二图 ROA vs APT，第三图以人类专家耗时为横轴的 METR 风格曲线，损失折算表随报告公开并做 ±50% 敏感性分析；CI 跑 6 任务 smoke 子集，主指标劣化超过 10% 或 Warning 占比超过 10% 阻断合并。真人评估用于校准并验证模拟人，目标是 ACS 与 NASA-TLX 的 Spearman 相关 ≥ 0.6。</p>
+
+<h2 id="experiments">实验设计</h2>
+<p>十四个实验，两个目的：在动手实现之前用最便宜的方式验证设计里最不确定的假设，以及校准并验证 benchmark 本身。全文在 <code>docs/EXPERIMENTS.md</code>，每个实验写清假设、变量、设计、规模、判定、失败后怎么改和成本。</p>
+<h3>最小启动包：不写框架代码，两周内完成</h3>
+<div class="grid2">
+  <div class="card"><h4>E1 离线回放</h4><p>把本机已有的 Claude Code 会话日志里的权限与提问事件跑过 v0.2 的准入门槛和三级策略，看上浮能砍多少、被过滤的里有多少其实需要人。判定准入门槛是否进 P0。3 到 4 人日。</p></div>
+  <div class="card"><h4>E2 审批游戏</h4><p>40 人在线做 25 分钟审批游戏，10% 是陷阱。三条件：60 条密集投递、按每 5 分钟 6 条限速投递、限速加"不处理的后果"一行。拟合识别率随提示数的衰减曲线，判定速率预算是否必要，并核实"人漏掉 1/3 陷阱"。</p></div>
+  <div class="card"><h4>E3 信息形态</h4><p>24 到 30 人被试内，同一批真实事件改写成三种形态：只有 headline、加 4 行上下文、加可展开证据与"什么能证明我错了"。测准确率、信心与校准。判定 proof 字段是否进 P0。</p></div>
+  <div class="card"><h4>E4 强制注入</h4><p>对任务集 42 个 ground-truth 决策在轨迹 10 到 90% 处强制注入正确答案，得到每个决策的价值衰减曲线与 point of no return，直接写入任务标注。约 630 次运行。</p></div>
+</div>
+<h3>全部实验</h3>
+<div class="tbl"><table>
+<tr><th>#</th><th>实验</th><th>检验的假设</th><th>形式</th><th>阶段</th></tr>
+<tr><td>E1</td><td>离线回放：准入门槛与三级策略</td><td>上浮减少 30 到 60%，被过滤事件中默认错误 &lt; 5%</td><td>离线分析</td><td>立即</td></tr>
+<tr><td>E2</td><td>审批游戏：提示密度 × 陷阱识别率</td><td>识别率随提示数指数衰减；限速投递高 ≥ 15 个百分点</td><td>真人在线</td><td>立即</td></tr>
+<tr><td>E3</td><td>信息形态：4 行 vs 证据</td><td>4 行只提高信心，证据提高准确率 ≥ 15 个百分点</td><td>真人在线</td><td>立即</td></tr>
+<tr><td>E4</td><td>强制注入标定 point of no return</td><td>goal 类前置，input 类到 50% 仍有价值</td><td>仿真</td><td>benchmark 前置</td></tr>
+<tr><td>E5</td><td>consent-only vs 三级 + exception</td><td>上浮减半，stall 减 60%，bad_default ≤ 5%</td><td>仿真</td><td>P1</td></tr>
+<tr><td>E6</td><td>账本：批准计数 vs 证据计数</td><td>有害自动放行少 80%，命中率差 &lt; 10 个百分点</td><td>仿真</td><td>P1</td></tr>
+<tr><td>E7</td><td>速率预算与 flood 的代价</td><td>FOCUS 中上浮降 70%，stall 增加 &lt; 20%</td><td>仿真 + 参数扫描</td><td>P1</td></tr>
+<tr><td>E8</td><td>模拟人效度</td><td>与真人轨迹不可区分，失败分布相关 ≥ 0.7</td><td>混合</td><td>P1</td></tr>
+<tr><td>E9</td><td>断点投递 vs 立即投递</td><td>恢复时间缩短 ≥ 50%，TLX 心理需求降 ≥ 1</td><td>真人被试内，8 到 12 人</td><td>P2</td></tr>
+<tr><td>E10</td><td>dark cockpit + digest 对情境意识</td><td>打断减 60% 而 SA 不降；去掉 digest 后 SA 降 ≥ 2</td><td>真人被试内</td><td>P2</td></tr>
+<tr><td>E11</td><td>Fan-out：一人管 3 / 5 / 8 个 Agent</td><td>舒适并发从 3 到 5 提到 ≥ 5；利用率 &gt; 70% 衰退</td><td>真人</td><td>P2</td></tr>
+<tr><td>E12</td><td>四周 dogfood 纵向</td><td>同类上浮逐周下降；橡皮章率不上升</td><td>纵向，3 到 5 人</td><td>P2</td></tr>
+<tr><td>E13</td><td>APT / ROA 效度</td><td>APT 与 NASA-TLX 相关 ≥ 0.6，与真实人力分钟 ≥ 0.8</td><td>相关分析</td><td>P2</td></tr>
+<tr><td>E14</td><td>损失折算表敏感性</td><td>ROA 排名对 ±50% 扰动 Kendall τ ≥ 0.8</td><td>分析</td><td>P2</td></tr>
+</table></div>
+<p>统计约定：预注册假设与主指标，效应量报 Cohen's d 或 Cliff's delta，bootstrap 95% 置信区间，被试内用配对检验，多重比较 Holm 校正，仿真每条件 ≥ 5 个种子。</p>
 
 <h2 id="sources">来源</h2>
 <h4>打断科学与人因学</h4>

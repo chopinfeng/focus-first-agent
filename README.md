@@ -9,6 +9,7 @@
 - `docs/CHANGELOG-v0.2.md` — v0.1 → v0.2 逐条对比与调整决策，末尾附 v0.3 价值层增补
 - `docs/USE-CASES.md` — 20 个最终 use case，每个带可验收的注意力行为
 - `docs/TESTING.md` — 四层测试方案：内核单元、适配器集成、场景回放与 17 条不变量、真人评估与模拟器验证
+- `docs/EXPERIMENTS.md` — 14 个实验：三个不需要写框架就能做的启动实验（离线回放、审批游戏、信息形态）、仿真对比、真人被试内实验、纵向 dogfood、benchmark 效度
 - `docs/BENCHMARK.md` — AttentionBench v0.3：**Attention per Task** 主指标（对齐 Artificial Analysis 的 cost per task）、反事实回放的价值层（ROA、ask precision/recall、情境意识探针、接管测试）、任务集与时机标注、模拟人类与非合作 persona、监督退化指标、协议与目标值
 - `docs/research/` — 八路原始调研
   - 01 HCI 打断科学 · 02 Agent 产品实践 · 03 HITL 框架与协议 · 04 多 Agent 监督与 ambient agents
