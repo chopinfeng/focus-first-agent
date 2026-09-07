@@ -1,0 +1,14 @@
+{
+  "name": "ffa-demo-live",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Focus-First Agent demo backed by a real LLM: agents run in sandboxes, the attention kernel routes every tool call, the page renders it live.",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0"
+  }
+}

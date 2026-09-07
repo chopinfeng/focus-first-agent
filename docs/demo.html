@@ -119,7 +119,7 @@ kbd{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid
 </style>
 
 <div class="top"><div class="in">
-  <span class="brand">FFA Demo<small>注意力优先的交互 · 75 分钟压缩演示</small></span>
+  <span class="brand">FFA Demo<small id="brandSub">注意力优先的交互 · 75 分钟压缩演示</small></span>
   <span class="dots" id="dots" aria-label="周边状态"></span>
   <span class="clock" id="clock">09:00</span>
   <span class="state FOCUS" id="hstate">FOCUS · 编辑中</span>
@@ -130,6 +130,7 @@ kbd{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid
     <button class="btn" id="focus" title="专注模式：抑制 Advisory 与 Caution-soon">专注</button>
     <button class="btn" id="away" title="离开：Advisory 会超时按默认执行，Warning 会推送到手机">去开会 / 回来</button>
     <button class="btn" id="reset">重置</button>
+    <button class="btn" id="live" title="连接本地 FFA 服务，让事件来自真实 LLM Agent（见仓库 demo/README.md）">实时 LLM</button>
   </div>
 </div></div>
 
@@ -286,12 +287,12 @@ function render(){
  $('#focus').classList.toggle('on',S.over.focus);$('#away').classList.toggle('on',S.over.away);$('#away').textContent=S.over.away?'回来':'去开会';
  // dots
  const d=$('#dots');d.innerHTML='';const agents=['auth-migrate','db-cleanup','docs-sync'];
- agents.forEach(a=>{const mine=S.inbox.filter(x=>x.agent===a&&!S.answered[x.id]);let s=null;if(mine.some(x=>x.level==='warning'))s='warn';else if(mine.some(x=>x.level==='caution'))s='needs';else if(mine.length)s='done';if(!s)return;const e=document.createElement('span');e.className='dot '+s;e.title=a;d.appendChild(e)});
+ agents.forEach(a=>{const mine=S.inbox.filter(x=>x.agent===a&&S.answered[x.id]===undefined);let s=null;if(mine.some(x=>x.level==='warning'))s='warn';else if(mine.some(x=>x.level==='caution'))s='needs';else if(mine.length)s='done';if(!s)return;const e=document.createElement('span');e.className='dot '+s;e.title=a;d.appendChild(e)});
  // stream
  const str=$('#stream');str.innerHTML=S.stream.slice(0,40).map(e=>`<div class="ev"><span class="t">${fmt(e.m)}</span><span class="a">${esc(e.agent)}</span><span>${esc(e.text)}</span><span class="r">${e.chips.map(c=>`<span class="chip ${c[0]}">${esc(c[1])}</span>`).join('')}</span></div>`).join('');
  $('#evCount').textContent=S.stream.length?`${S.stream.length} 条`:'';
  // inbox
- const ib=$('#inbox');const vis=S.inbox.filter(x=>!S.answered[x.id]);
+ const ib=$('#inbox');const vis=S.inbox.filter(x=>S.answered[x.id]===undefined);
  const ids=new Set([...ib.querySelectorAll('.card')].map(c=>c.dataset.id));
  vis.forEach(ar=>{if(ids.has(ar.id))return;const c=document.createElement('article');c.className='card new';c.dataset.id=ar.id;
   c.innerHTML=`<div class="head"><span class="lvl ${ar.level}"><i></i>${ar.level} · ${ar.cls}${ar.irreversible?' · 不可逆':''}</span><div class="ttl">${ar.ttl?`TTL ${ar.ttl} min`:'阻塞'}<br>无回应 → ${esc(ar.fallback)}</div><div class="headline">${esc(ar.headline)}</div></div>
@@ -341,7 +342,51 @@ $('#focus').addEventListener('click',()=>{S.over.focus=!S.over.focus;S.over.away
 $('#away').addEventListener('click',()=>{S.over.away=!S.over.away;S.over.focus=false;if(!S.over.away){S.over.bpUntil=S.m+1;setNarr(S.m,'<b>你回来了。</b>先看收件箱与 digest。');tick(S.m)}else setNarr(S.m,'<b>你离开了。</b>Advisory 会超时按默认执行，Warning 会推送到手机。');render()});
 $('#reset').addEventListener('click',()=>{clearTimeout(timer);S=fresh();$('#inbox').innerHTML='';$('#summary').hidden=true;setNarr(0,'<b>开始。</b>三个 Agent 已拿到计划批准，你在编辑代码。按播放，或直接用右上角按钮改变你的状态。');render()});
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.metaKey||e.ctrlKey)return;if(e.key===' '){e.preventDefault();$('#play').click()}
- const vis=S.inbox.filter(x=>!S.answered[x.id]);const ar=vis[0];if(ar&&['1','2','3'].includes(e.key)&&ar.opts[+e.key-1])answer(ar,+e.key-1)});
+ const vis=S.inbox.filter(x=>S.answered[x.id]===undefined);const ar=vis[0];if(ar&&['1','2','3'].includes(e.key)&&ar.opts[+e.key-1])answer(ar,+e.key-1)});
 render();
+
+/* ---------- 实时模式：事件来自本地服务里的真实 LLM Agent ---------- */
+const LIVE={on:false,url:null,es:null,hs:'FOCUS'};
+const _humanState=humanState;
+humanState=function(m){return LIVE.on?LIVE.hs:_humanState(m)};
+function livePost(path,body){return fetch(LIVE.url+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body||{})}).catch(()=>{})}
+function liveConnect(url){
+ LIVE.url=url.replace(/\/$/,'');
+ try{LIVE.es=new EventSource(LIVE.url+'/events')}catch(e){alert('无法连接 '+url);return}
+ LIVE.es.onerror=()=>{if(!LIVE.on){setNarr(0,'<b>连不上本地服务。</b>先在仓库的 demo/ 目录运行 npm start（见 demo/README.md），再点"实时 LLM"。');LIVE.es.close()}};
+ LIVE.es.onmessage=e=>{
+  const snap=JSON.parse(e.data);
+  if(!LIVE.on){LIVE.on=true;clearTimeout(timer);S.playing=false;$('#play').textContent='▶ 开始 Agent';$('#play').disabled=false;$('#speed').disabled=true;$('#inbox').innerHTML='';$('#brandSub').textContent=`实时 · ${snap.cfg.provider} · ${snap.cfg.model} · 1 分钟 = ${snap.cfg.scale}s`;setNarr(snap.m,'<b>已连接本地服务。</b>三个 Agent 会在各自沙箱里做真实任务，每个工具调用都经过内核路由。用右上角按钮改变你的状态。');}
+  LIVE.hs=snap.hs;
+  // 页面状态直接采用服务端快照
+  Object.assign(S,{m:snap.m,stream:snap.stream,inbox:snap.inbox,pending:snap.pending,decided:snap.decided,digest:snap.digest,answered:snap.answered,base:snap.base,ffa:snap.ffa,phone:snap.phone,done:snap.done,over:{focus:false,away:snap.hs==='AWAY',bpUntil:-1}});
+  if(snap.error)setNarr(snap.m,'<b>LLM 提供商初始化失败：</b>'+snap.error);
+  // 移除已回答的卡片
+  document.querySelectorAll('#inbox .card').forEach(c=>{if(S.answered[c.dataset.id]!==undefined&&!c.classList.contains('gone')){c.classList.add('gone')}});
+  render();
+  const agents=(snap.agents||[]).map(a=>`${a.name}: ${a.state}`).join(' · ');if(agents)$('#evCount').textContent=agents;
+  if(snap.done)setNarr(snap.m,'<b>所有 Agent 已完成。</b>收件箱里可能还有等你的证据包。');
+ };
+}
+$('#live').addEventListener('click',()=>{
+ if(LIVE.on){LIVE.es.close();LIVE.on=false;$('#live').classList.remove('on');location.reload();return}
+ const dflt=location.protocol.startsWith('http')?location.origin:'http://localhost:8765';
+ const url=location.protocol.startsWith('http')?dflt:prompt('本地 FFA 服务地址',dflt);
+ if(!url)return;$('#live').classList.add('on');liveConnect(url);
+});
+if(location.protocol.startsWith('http')&&/localhost|127\.0\.0\.1/.test(location.host)){$('#live').classList.add('on');liveConnect(location.origin)}
+// 实时模式下劫持控制与回答
+const _answer=answer;
+answer=function(ar,k){if(!LIVE.on)return _answer(ar,k);
+ if(ar.level==='warning'&&k===0&&!ar.armed){ar.armed=true;const c=document.querySelector(`[data-id="${ar.id}"] .opt[data-k="0"]`);if(c)c.innerHTML='<kbd>1</kbd>确认发送';const pb=$('#phoneBody button[data-k="0"]');if(pb)pb.textContent='确认发送';livePost('/answer',{id:ar.id,k});return}
+ livePost('/answer',{id:ar.id,k})};
+['commit','focus','away'].forEach(id=>{const b=$('#'+id);b.addEventListener('click',e=>{if(!LIVE.on)return;e.stopImmediatePropagation();
+ if(id==='commit')livePost('/human',{action:'commit'});
+ if(id==='focus')livePost('/human',{action:'focus'});
+ if(id==='away')livePost('/human',{action:LIVE.hs==='AWAY'?'back':'away'});
+},true)});
+$('#play').addEventListener('click',e=>{if(!LIVE.on)return;e.stopImmediatePropagation();livePost('/start')},true);
+$('#reset').addEventListener('click',e=>{if(!LIVE.on)return;e.stopImmediatePropagation();location.reload()},true);
+document.addEventListener('click',e=>{const b=e.target.closest('#decided .undo');if(b&&LIVE.on){e.stopImmediatePropagation();const d=S.decided[+b.dataset.i];if(d)livePost('/undo',{id:d.ar.id})}},true);
 })();
 </script>
