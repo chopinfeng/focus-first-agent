@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/chopinfeng/focus-first-agent/ffa/schema/attention_request.json",
+  "title": "AttentionRequest",
+  "description": "The unit of human attention in FFA. Every interrupt / approval / elicitation / notification from any runtime is translated into this before it can reach a person. Admission requires required_action, consequence_if_ignored and time_to_irreversible; without them a request can only enter the digest.",
+  "type": "object",
+  "required": ["id", "agent_id", "kind", "decision_class", "headline", "risk", "urgency", "on_expire"],
+  "properties": {
+    "id": { "type": "string" },
+    "task_id": { "type": "string" },
+    "agent_id": { "type": "string" },
+    "supersedes_id": { "type": ["string", "null"], "description": "Retry/update of an earlier request; reuse its inbox entry." },
+    "kind": { "enum": ["notify", "question", "approval", "review", "escalation"] },
+    "decision_class": { "enum": ["goal", "input", "constraint", "taste"], "description": "goal/taste always reach a human regardless of risk; goal should be asked in the plan phase." },
+    "headline": { "type": "string", "maxLength": 120, "description": "The effect on the person (symptom), not the cause." },
+    "required_action": { "type": "string", "description": "Admission: what the person must do." },
+    "consequence_if_ignored": { "type": "string", "description": "Admission: what happens if nobody answers." },
+    "time_to_irreversible": { "type": "string", "format": "duration", "description": "Admission: how long until the choice is lost." },
+    "point_of_no_return": { "type": "string", "description": "input-class: asking after this step has no value." },
+    "context": {
+      "type": "object",
+      "properties": { "you_were": { "type": "string" }, "i_did": { "type": "string" }, "i_need": { "type": "string" }, "blast_radius": { "type": "string" } }
+    },
+    "why_now": { "type": "string" },
+    "proof": { "type": "array", "items": { "type": "object", "required": ["type", "ref"], "properties": { "type": { "type": "string" }, "ref": { "type": "string" }, "summary": { "type": "string" } } } },
+    "what_would_prove_me_wrong": { "type": "string" },
+    "options": { "type": "array", "minItems": 1, "maxItems": 3, "items": { "type": "object", "required": ["id", "label"], "properties": { "id": { "type": "string" }, "label": { "type": "string" }, "recommended": { "type": "boolean" }, "consequence": { "type": "string" } } } },
+    "default": { "type": "object", "required": ["option_id", "apply_after"], "properties": { "option_id": { "type": "string" }, "apply_after": { "type": "string", "format": "duration" } }, "description": "Only allowed at Advisory level; never for P0 or goal/taste." },
+    "risk": { "type": "object", "required": ["level", "reversible"], "properties": { "level": { "enum": ["P0", "P1", "P2", "P3"] }, "reversible": { "type": "boolean" }, "effects": { "type": "array", "items": { "enum": ["fs.read", "fs.write", "fs.delete", "net.out", "proc.exec", "cred", "git.push", "infra", "money", "message.out"] } } } },
+    "urgency": { "enum": ["now", "soon", "whenever"] },
+    "confirm_delay": { "type": "string", "format": "duration", "description": "Wait before emitting; withdraw if the condition heals." },
+    "cost_estimate": { "type": "object", "properties": { "interaction_seconds": { "type": "integer" } } },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1, "description": "Orders the recommended option only; never affects ask-vs-act." },
+    "ttl": { "type": "string", "format": "duration" },
+    "on_expire": { "enum": ["apply_default", "skip_and_continue", "end_task", "escalate"], "description": "P0 may only use end_task or escalate." },
+    "batch_key": { "type": "string" },
+    "deep_link": { "type": "string" },
+    "delivery": { "type": "object", "properties": { "state": { "enum": ["sent", "delivered", "displayed", "responded"] }, "channel": { "type": "string" }, "at": { "type": "string" } } }
+  },
+  "allOf": [
+    { "if": { "properties": { "risk": { "properties": { "level": { "const": "P0" } } } } }, "then": { "properties": { "on_expire": { "enum": ["end_task", "escalate"] } }, "not": { "required": ["default"] } } },
+    { "if": { "properties": { "decision_class": { "enum": ["goal", "taste"] } } }, "then": { "not": { "required": ["default"] } } }
+  ]
+}

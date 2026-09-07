@@ -1,0 +1,11 @@
+{
+  "name": "@focus-first/ffa",
+  "version": "0.1.0",
+  "description": "Focus-First Agent attention kernel: routes agent events to ACT / Advisory / Caution / Warning, defers to human breakpoints, merges, folds floods, applies safe defaults on timeout, and records what a human would otherwise have to read.",
+  "type": "module",
+  "main": "kernel.mjs",
+  "exports": { ".": "./kernel.mjs", "./schema/attention_request.json": "./schema/attention_request.json" },
+  "scripts": { "test": "node --test" },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
