@@ -469,7 +469,7 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
 </div>
 
 <h2 id="uiux">界面规范：呈现本身不能消耗注意力</h2>
-<p>框架保护注意力，呈现它的界面也不能反过来消耗注意力。规范全文在 <code>docs/UI-UX.md</code>，可点的原型在 <a href="https://claude.ai/code/artifact/e388218d-e893-48f4-bf95-9824704f05f2">FFA Inbox</a>。一句话：<strong>界面的成功状态是"什么都没有"</strong>。正常运转的 FFA 界面在大多数时间应当是空的、暗的、静止的。</p>
+<p>框架保护注意力，呈现它的界面也不能反过来消耗注意力。规范全文在 <code>docs/UI-UX.md</code>，可点的原型在 <a href="https://claude.ai/code/artifact/e388218d-e893-48f4-bf95-9824704f05f2">FFA Inbox</a>（含 14 种结构化介入控件），动态演示在 <a href="https://claude.ai/code/artifact/3b2a08cc-af50-4794-994a-82feb8b1782b">FFA Demo</a>：75 分钟压缩时段里三个 Agent 的事件如何被合并、延迟到断点、超时默认、洪水折叠与 Warning 穿透，并与逐条弹窗并排计数。一句话：<strong>界面的成功状态是"什么都没有"</strong>。正常运转的 FFA 界面在大多数时间应当是空的、暗的、静止的。</p>
 <div class="tbl"><table>
 <tr><th>原则</th><th>含义</th><th>反例</th></tr>
 <tr><td>暗舱</td><td>正常即无灯。working 不显示，只有 blocked、needs-you、done 出现</td><td>每个 Agent 一个 spinner，流式输出滚动</td></tr>

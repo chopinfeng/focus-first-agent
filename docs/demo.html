@@ -1,0 +1,347 @@
+<title>FFA Demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F3F5F4; --surface:#FFFFFF; --sunken:#E9EDEB; --ink:#172220; --muted:#6B7975; --line:#D5DDDA; --faint:#C7D0CC;
+  --needs:#C4700F; --needs-soft:#F6E5CF; --blocked:#C9A227; --done:#2F7A4E; --done-soft:#D9EBDF; --warn:#B42A26; --warn-soft:#F5DAD8; --accent:#0E6B67; --accent-soft:#D8ECEA;
+  --display:"Manrope","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;
+  --body:"IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;
+  --mono:"IBM Plex Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ground:#0F1614; --surface:#182120; --sunken:#121A18; --ink:#E4EBE8; --muted:#93A39E; --line:#2A3634; --faint:#3A4744;
+  --needs:#E39A3F; --needs-soft:#3A2A14; --blocked:#D4B24C; --done:#6CC08B; --done-soft:#163524; --warn:#E1655F; --warn-soft:#3D1A18; --accent:#5CC1BB; --accent-soft:#163532;}}
+:root[data-theme="dark"]{
+  --ground:#0F1614; --surface:#182120; --sunken:#121A18; --ink:#E4EBE8; --muted:#93A39E; --line:#2A3634; --faint:#3A4744;
+  --needs:#E39A3F; --needs-soft:#3A2A14; --blocked:#D4B24C; --done:#6CC08B; --done-soft:#163524; --warn:#E1655F; --warn-soft:#3D1A18; --accent:#5CC1BB; --accent-soft:#163532;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible{outline:2px solid var(--needs);outline-offset:2px}
+kbd{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 5px;background:var(--surface)}
+.mono{font-family:var(--mono);font-size:.92em}
+/* top */
+.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.top .in{max-width:1180px;margin:0 auto;padding:12px 20px;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+.brand{font-family:var(--display);font-weight:800;font-size:15px;letter-spacing:.01em}
+.brand small{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--muted);margin-left:8px}
+.dots{display:flex;gap:10px;align-items:center;min-width:60px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot.needs{background:var(--needs)} .dot.done{background:var(--done)} .dot.warn{background:var(--warn)} .dot.blocked{background:var(--blocked)}
+.clock{font-family:var(--mono);font-size:13px;min-width:90px}
+.state{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:4px;font-size:12.5px;border:1px solid var(--line)}
+.state.FOCUS{border-color:var(--ink)} .state.BREAKPOINT{border-color:var(--done);color:var(--done)} .state.AWAY{border-color:var(--muted);color:var(--muted)}
+.ctrls{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.btn{padding:5px 11px;border:1px solid var(--line);border-radius:4px;font-size:12.5px;background:var(--surface)}
+.btn:hover:not(:disabled){border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.btn.on{border-color:var(--ink)}
+/* narration */
+.narr{max-width:1180px;margin:0 auto;padding:12px 20px 0;display:flex;gap:12px;align-items:baseline}
+.narr .t{font-family:var(--mono);font-size:11.5px;color:var(--muted);white-space:nowrap}
+.narr .s{font-size:14px}
+.narr .s b{font-family:var(--display);font-weight:700}
+/* grid */
+.grid{max-width:1180px;margin:0 auto;padding:14px 20px 70px;display:grid;grid-template-columns:270px minmax(0,1fr) 300px;gap:18px;align-items:start}
+.col h2{font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:700}
+.col h2 span{font-weight:400;letter-spacing:0;text-transform:none;font-family:var(--mono);font-size:11px;margin-left:6px}
+/* stream */
+.stream{display:flex;flex-direction:column;gap:5px;max-height:70vh;overflow:auto;padding-right:4px}
+.ev{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:6px 9px;font-size:12px;display:grid;grid-template-columns:auto 1fr;gap:2px 8px}
+.ev .t{font-family:var(--mono);font-size:10.5px;color:var(--muted);grid-row:1/3;padding-top:2px}
+.ev .a{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.ev .r{grid-column:2;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.chip{display:inline-block;font-family:var(--mono);font-size:10px;padding:0 6px;border-radius:3px;background:var(--sunken);color:var(--muted);white-space:nowrap}
+.chip.act{background:var(--done-soft);color:var(--done)} .chip.defer{background:var(--needs-soft);color:var(--needs)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.merge{background:var(--accent-soft);color:var(--accent)} .chip.sup{background:var(--sunken);color:var(--muted)} .chip.base{background:transparent;border:1px dashed var(--faint);color:var(--muted)}
+/* inbox */
+.inbox .empty{padding:30px 0;color:var(--muted);font-size:13.5px}
+.inbox .empty b{color:var(--ink);font-weight:500}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:10px;overflow:hidden;transition:opacity .2s,max-height .3s,margin .3s;max-height:600px}
+.card.gone{opacity:0;max-height:0;margin:0;border-width:0}
+.card.new{animation:in .25s ease-out}
+@keyframes in{from{opacity:0}to{opacity:1}}
+.head{padding:12px 14px 0;display:grid;grid-template-columns:1fr auto;gap:3px 14px}
+.lvl{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;gap:6px;align-items:center}
+.lvl.caution{color:var(--needs)} .lvl.warning{color:var(--warn)} .lvl.advisory{color:var(--muted)}
+.lvl i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.headline{font-family:var(--display);font-weight:700;font-size:15px;line-height:1.35}
+.ttl{grid-column:2;grid-row:1/3;text-align:right;font-family:var(--mono);font-size:10.5px;color:var(--muted);line-height:1.6}
+.ctx{margin:8px 14px 0;display:grid;grid-template-columns:auto 1fr;gap:1px 10px;font-size:12.5px;padding:7px 10px;background:var(--sunken);border-radius:4px}
+.ctx b{font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--muted);padding-top:2px}
+.why{margin:7px 14px 0;font-size:12px;color:var(--muted)}
+.why em{font-style:normal;color:var(--ink)}
+.opts{display:flex;flex-wrap:wrap;gap:7px;margin:9px 14px 12px}
+.opt{display:inline-flex;gap:7px;align-items:baseline;padding:5px 10px;border:1px solid var(--line);border-radius:4px;font-size:12.5px;background:var(--surface)}
+.opt:hover{border-color:var(--ink)}
+.opt.rec{border-color:var(--needs);background:var(--needs-soft);font-weight:600}
+.opt.danger{border-color:var(--warn);color:var(--warn)}
+.opt .c{color:var(--muted);font-weight:400;font-size:11.5px}
+.sub{margin:6px 14px 0;font-size:12px}
+.sub .row{display:grid;grid-template-columns:1fr auto;gap:8px;padding:3px 0;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sub .row:last-child{border-bottom:0}
+.fold{font-size:12px;color:var(--muted);padding:6px 2px}
+/* side */
+.side .box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:12px}
+.cmp{display:grid;grid-template-columns:1fr auto auto;gap:4px 10px;font-size:12.5px;align-items:baseline}
+.cmp .h{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.04em}
+.cmp .n{font-family:var(--display);font-weight:800;font-size:18px;font-variant-numeric:tabular-nums;text-align:right;line-height:1.1}
+.cmp .n.b{color:var(--muted);font-weight:600}
+.cmp .l{color:var(--muted)}
+.bar{height:6px;background:var(--sunken);border-radius:3px;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;background:var(--muted)}
+.bar i.f{background:var(--accent)}
+.dec{font-size:12.5px}
+.dec .it{display:grid;grid-template-columns:1fr auto;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:center}
+.dec .it:last-child{border-bottom:0}
+.dec .it small{display:block;color:var(--muted);font-size:11px}
+.undo{padding:2px 8px;border:1px solid var(--line);border-radius:4px;font-size:11.5px}
+.dig{font-size:12px;color:var(--muted)}
+.dig div{padding:3px 0;border-bottom:1px solid var(--line)}
+.dig div:last-child{border-bottom:0}
+.dig b{font-family:var(--mono);font-weight:500;font-size:10.5px;margin-right:6px}
+.phone{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--sunken);font-size:12px;min-height:60px}
+.phone .ph{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-bottom:6px}
+.push{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.push .pt{font-family:var(--mono);font-size:10.5px;color:var(--warn);margin-bottom:2px}
+.push .pa{display:flex;gap:6px;margin-top:6px}
+.push .pa button{flex:1;border:1px solid var(--line);border-radius:4px;padding:3px 0;font-size:11.5px}
+.summary{margin:0 auto;max-width:1180px;padding:0 20px 60px}
+.summary .box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.summary h3{font-family:var(--display);font-size:16px;margin:0 0 8px}
+.summary table{border-collapse:collapse;font-size:13px;width:100%}
+.summary th{text-align:left;font-family:var(--mono);font-weight:500;font-size:11px;color:var(--muted);padding:4px 8px 4px 0;border-bottom:1px solid var(--line)}
+.summary td{padding:6px 8px 6px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.summary tr:last-child td{border-bottom:0}
+.note{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.6}
+@media (max-width:980px){.grid{grid-template-columns:1fr}.stream{max-height:260px}}
+@media (prefers-reduced-motion:reduce){.card{transition:none;animation:none}}
+</style>
+
+<div class="top"><div class="in">
+  <span class="brand">FFA Demo<small>注意力优先的交互 · 75 分钟压缩演示</small></span>
+  <span class="dots" id="dots" aria-label="周边状态"></span>
+  <span class="clock" id="clock">09:00</span>
+  <span class="state FOCUS" id="hstate">FOCUS · 编辑中</span>
+  <div class="ctrls">
+    <button class="btn primary" id="play">▶ 播放</button>
+    <button class="btn" id="speed">1×</button>
+    <button class="btn" id="commit" title="产生一个粗断点：延迟中的请求会在此刻投递">提交 commit</button>
+    <button class="btn" id="focus" title="专注模式：抑制 Advisory 与 Caution-soon">专注</button>
+    <button class="btn" id="away" title="离开：Advisory 会超时按默认执行，Warning 会推送到手机">去开会 / 回来</button>
+    <button class="btn" id="reset">重置</button>
+  </div>
+</div></div>
+
+<div class="narr"><span class="t" id="narrT">09:00</span><span class="s" id="narr"><b>开始。</b>三个 Agent 已拿到计划批准，你在编辑代码。按播放，或直接用右上角按钮改变你的状态。</span></div>
+
+<div class="grid">
+  <div class="col">
+    <h2>Agent 事件流 <span id="evCount"></span></h2>
+    <div class="stream" id="stream"></div>
+  </div>
+  <div class="col inbox">
+    <h2>收件箱 <span>只有需要你的才出现在这里</span></h2>
+    <div id="inbox"></div>
+    <div class="empty" id="empty"><b>没有需要你的事。</b><br><span id="emptySub">延迟中的请求会在你的下一个断点投递。</span></div>
+    <div class="fold" id="fold" hidden></div>
+  </div>
+  <div class="col side">
+    <div class="box">
+      <h2>对照 <span>逐条弹窗 vs FFA</span></h2>
+      <div class="cmp">
+        <span class="h"></span><span class="h">弹窗</span><span class="h">FFA</span>
+        <span class="l">打断次数</span><span class="n b" id="bI">0</span><span class="n" id="fI">0</span>
+        <span class="l">FOCUS 中打断</span><span class="n b" id="bF">0</span><span class="n" id="fF">0</span>
+        <span class="l">注意力成本（分钟）</span><span class="n b" id="bC">0</span><span class="n" id="fC">0</span>
+      </div>
+      <div class="bar"><i id="barB" style="width:0%"></i></div>
+      <div class="bar"><i class="f" id="barF" style="width:0%"></i></div>
+      <div class="note">成本按状态单价估算：FOCUS 12、断点 1、离线推送 3 分钟/次；同一分钟内的连续弹窗只计一次。</div>
+    </div>
+    <div class="box"><h2>手机</h2><div class="phone" id="phone"><div class="ph">只有 Warning 与离线时的紧急 Caution 会到这里</div><div id="phoneBody" style="color:var(--muted);font-size:12px">安静。</div></div></div>
+    <div class="box"><h2>已替你决定</h2><div class="dec" id="decided"><div style="color:var(--muted);font-size:12px">空。</div></div></div>
+    <div class="box"><h2>Digest <span>下一个断点生成</span></h2><div class="dig" id="digest"><div>空。</div></div></div>
+  </div>
+</div>
+
+<div class="summary" id="summary" hidden>
+  <div class="box">
+    <h3>75 分钟结束：这段时间里发生了什么</h3>
+    <table id="sumTbl"></table>
+    <div class="note">这是脚本化演示，Agent 事件是预设的，你的回答会真实影响路由（比如提前回答、专注、离开）。数字只用于对比两种交互，不代表实测。</div>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PRICE={FOCUS:12,BREAKPOINT:1,AWAY:3};
+const T0=9*60; // 09:00
+const fmt=m=>{const t=T0+m;return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0')};
+
+/* ---------- 脚本 ---------- */
+// 人的默认日程（可被按钮覆盖）
+const SCHED=[{m:0,s:'FOCUS'},{m:12,s:'BREAKPOINT',note:'你提交了 commit'},{m:14,s:'FOCUS'},{m:20,s:'AWAY',note:'你去开会了'},{m:45,s:'BREAKPOINT',note:'你回来了，打开收件箱'},{m:47,s:'FOCUS'},{m:60,s:'BREAKPOINT',note:'测试跑完了'},{m:62,s:'FOCUS'}];
+// Agent 事件：kind = act（可逆范围内，自动放行）| ar（需要路由）
+const EVENTS=[
+ {m:1,agent:'auth-migrate',kind:'act',n:12,label:'写入 12 个 src/auth/** 文件',key:'fs.write:src/**'},
+ {m:3,agent:'auth-migrate',kind:'ar',id:'mig',level:'caution',urg:'soon',cls:'input',irreversible:true,headline:'要删除 3 个 2023 年的 migration 文件',
+   ctx:{i_did:'迁移了 auth 路由，测试 41/41 通过',i_need:'确认能否删除 db/migrations/2023_*.sql'},opts:[{l:'删除',rec:1,c:'CI 重跑 12 min'},{l:'保留并加注释'},{l:'任务结束再问'}],ttl:240,fallback:'保留'},
+ {m:4,agent:'auth-migrate',kind:'ar',id:'dep',level:'caution',urg:'soon',cls:'constraint',headline:'要新增依赖 jose 5.2.0 处理 JWT',
+   ctx:{i_did:'比较了 3 个 JWT 库；MIT，0 传递依赖，0 CVE',i_need:'允许新增，或用现有 jsonwebtoken'},opts:[{l:'添加 jose',rec:1},{l:'用 jsonwebtoken'},{l:'不加'}],ttl:240,fallback:'不加'},
+ {m:6,agent:'db-cleanup',kind:'act',n:1,label:'pnpm test（账本 auto）',key:'shell:pnpm test'},
+ {m:8,agent:'auth-migrate',kind:'ar',id:'case',level:'advisory',urg:'whenever',cls:'input',headline:'API 响应字段用 camelCase 还是 snake_case？',
+   ctx:{i_did:'现有代码 92% 是 camelCase',i_need:'确认命名；不答 20 分钟后按 camelCase'},opts:[{l:'camelCase',rec:1},{l:'snake_case'}],ttl:20,fallback:'camelCase',applyAfter:20},
+ {m:15,agent:'docs-sync',kind:'act',n:4,label:'读取 registry.npmjs.org 4 次',key:'net.out:registry'},
+ {m:22,agent:'db-cleanup',kind:'internal',label:'verifier 第 1 轮失败，自行修复中（不打扰你）'},
+ {m:26,agent:'db-cleanup',kind:'internal',label:'verifier 第 2 轮失败，换策略（不打扰你）'},
+ {m:30,agent:'db-cleanup',kind:'burst',n:12,label:'10 分钟内 12 次 pnpm install 重试',key:'proc.exec:pnpm install'},
+ {m:36,agent:'docs-sync',kind:'ar',id:'post',level:'warning',urg:'now',cls:'constraint',headline:'要在公开仓库 issue #204 发一条评论',
+   ctx:{i_did:'写好草稿："已在 #812 修复：refresh 端点现在返回 401 而不是 500"',i_need:'逐字确认后才发；不可撤回'},opts:[{l:'发送（再按一次）',danger:1},{l:'改后发'},{l:'不发'}],ttl:0,fallback:'不发'},
+ {m:40,agent:'db-cleanup',kind:'ar',id:'esc',level:'caution',urg:'soon',cls:'input',headline:'3 轮仍有 2 个测试失败，需要你介入',
+   ctx:{i_did:'尝试了 3 种修法：时区、mock 顺序、表存在性检查',i_need:'给一个提示，或接管'},opts:[{l:'提示：用 UTC 比较',rec:1},{l:'我来接管'},{l:'标 flaky 跳过'}],ttl:360,fallback:'暂停任务'},
+ {m:50,agent:'docs-sync',kind:'ar',id:'evid',level:'caution',urg:'soon',cls:'constraint',headline:'docs-sync 完成，证据包含 1 处架构级变更',
+   ctx:{i_did:'同步 6 文件；verifier 通过；新增 devDependency zod',i_need:'确认假设"zod 可作为 devDependency"，签字后合并'},opts:[{l:'合并（我理解 zod 的作用）',rec:1},{l:'退回：不要加 zod'},{l:'稍后'}],ttl:600,fallback:'不合并'},
+ {m:58,agent:'db-cleanup',kind:'ar',id:'stuck',level:'advisory',urg:'whenever',cls:'constraint',headline:'pnpm build 已运行 6 分钟无输出',
+   ctx:{i_did:'自动放行了 pnpm build（历史中位 48 秒）',i_need:'再等还是终止'},opts:[{l:'再等 10 分钟',rec:1},{l:'终止并换策略'}],ttl:30,fallback:'再等 10 分钟后终止',applyAfter:10},
+];
+const NARR={1:'auth-migrate 一口气写了 12 个文件。都在 scope 内、可逆、账本已放行：<b>直接做，进 digest</b>。逐条弹窗会在这里打断你 12 次。',
+ 3:'删除 migration 不可逆，是 Caution。但你在 FOCUS：<b>延迟到你的下一个断点</b>，Agent 先做不依赖它的工作。',
+ 4:'新增依赖也是 Caution。同样延迟；两条会在断点一起投递。',
+ 8:'命名问题是 Advisory：有安全默认（92% 代码已是 camelCase）。<b>不打扰你</b>，20 分钟没人答就按默认。',
+ 12:'<b>你提交了 commit，这是粗断点。</b>延迟中的两条 Caution 现在投递。答完再回去写代码。',
+ 20:'<b>你去开会了。</b>接下来 25 分钟，Advisory 会超时按默认执行，Caution 等你回来，只有 Warning 会到手机。',
+ 22:'db-cleanup 的 verifier 失败了。<b>前两轮不打扰你</b>，Agent 自己修。',
+ 28:'camelCase 的 20 分钟到了：<b>按默认执行，进"已替你决定"</b>，随时可撤销。',
+ 30:'db-cleanup 在 10 分钟内产生 12 条请求，触发 <b>flood 模式</b>：折叠成一条，等你回来。',
+ 36:'docs-sync 要在公开仓库发评论，<b>Warning</b>：即使你在开会也推送到手机，逐字预览，发送要按两次。',
+ 40:'第 3 轮还是失败，现在才升级为 Caution。你不在，<b>进收件箱等你回来</b>，不推送。',
+ 45:'<b>你回来了。</b>收件箱里是等你的 Caution，digest 里是这 45 分钟发生的一切，一屏读完。',
+ 50:'docs-sync 交付证据包。含新增依赖，属于架构级：<b>需要你的理解签字</b>才能合并，不能自动。',
+ 58:'一个被自动放行的 build 静默了 6 分钟。Advisory：<b>不猜，也不弹</b>，等断点或 10 分钟后自动终止。',
+ 60:'测试跑完，中等断点：Caution 级的证据包现在投递。',
+ 75:'<b>75 分钟结束。</b>看下面的总结。'};
+
+/* ---------- 状态 ---------- */
+let S;
+function fresh(){return {m:0,playing:false,speed:1,over:{focus:false,away:false,bpUntil:-1},stream:[],pending:[],inbox:[],decided:[],digest:[],answered:{},base:{i:0,f:0,c:0,last:-9},ffa:{i:0,f:0,c:0,last:-9},flood:null,phone:null,done:false,routed:{}}}
+S=fresh();
+function humanState(m){
+ if(S.over.bpUntil>=m)return 'BREAKPOINT';
+ if(S.over.away)return 'AWAY';
+ let s='FOCUS';for(const x of SCHED)if(x.m<=m)s=x.s;
+ if(S.over.focus&&s!=='AWAY')return 'FOCUS';
+ return s;
+}
+const isBP=m=>humanState(m)==='BREAKPOINT';
+function cost(which,m,st,push){const w=S[which];w.i++;if(st==='FOCUS')w.f++;
+ if(m-w.last>=1){w.c+=push?PRICE.AWAY:(PRICE[st]||1);w.last=m}}
+
+/* ---------- 路由 ---------- */
+function log(m,agent,text,chips){S.stream.unshift({m,agent,text,chips})}
+function route(ev,m){
+ const st=humanState(m);
+ if(ev.kind==='act'){log(m,ev.agent,ev.label,[['act','ACT · 回滚点'],['merge',`合并 ${ev.n} 条 → digest`],['base',`弹窗 ×${ev.n}`]]);S.digest.push({m,a:ev.agent,t:`已放行：${ev.label}（可撤销）`});for(let i=0;i<ev.n;i++)cost('base',m,st);return}
+ if(ev.kind==='internal'){log(m,ev.agent,ev.label,[['sup','内部 · 不上浮']]);cost('base',m,st);return}
+ if(ev.kind==='burst'){log(m,ev.agent,ev.label,[['warn','flood'],['merge','折叠为 1 条'],['base',`弹窗 ×${ev.n}`]]);for(let i=0;i<ev.n;i++)cost('base',m,st);
+   const ar={id:'flood',level:'advisory',urg:'soon',cls:'constraint',agent:ev.agent,headline:'db-cleanup 10 分钟内产生 12 条请求，已折叠',ctx:{i_did:'7 次 pnpm install、4 次 registry 访问、1 次写入',i_need:'暂停它自检，还是逐条看'},opts:[{l:'暂停并让它自检',rec:1},{l:'逐条看'},{l:'全部按默认'}],ttl:60,fallback:'暂停',born:m,flood:true};
+   defer(ar,m);return}
+ const ar=Object.assign({born:m},ev);
+ cost('base',m,st);
+ if(ar.level==='warning'){deliver(ar,m,true);return}
+ if(ar.level==='advisory'){log(m,ar.agent,ar.headline,[['sup','Advisory · exception'],[ 'defer',`${ar.applyAfter?ar.applyAfter+' 分钟后按默认':'等粗断点'}`],['base','弹窗']]);S.pending.push(ar);return}
+ // caution
+ if(isBP(m)){deliver(ar,m,false);return}
+ defer(ar,m);
+}
+function defer(ar,m){const st=humanState(m);log(m,ar.agent,ar.headline,[['defer',`Caution · 延迟到断点（你在 ${st}）`],['base','弹窗']]);S.pending.push(ar)}
+function deliver(ar,m,push){const st=humanState(m);ar.delivered=m;S.inbox.push(ar);
+ cost('ffa',m,st,push&&st==='AWAY');
+ if(push){S.phone={ar,m};log(m,ar.agent,ar.headline,[['warn','Warning · 立即'],['warn',st==='AWAY'?'推送到手机':'收件箱 + 提示'],['base','弹窗']])}
+ else log(m,ar.agent,ar.headline,[['defer',`投递（${st}）`]]);
+}
+function tick(m){
+ // schedule notes
+ const sc=SCHED.find(x=>x.m===m);
+ // deliver pending on breakpoint
+ const st=humanState(m);
+ if(st==='BREAKPOINT'){const keep=[];for(const ar of S.pending){if(ar.level==='caution'||ar.level==='advisory'&&!ar.applyAfter)deliver(ar,m,false);else keep.push(ar)}S.pending=keep;
+   if(S.digest.length&&!S.digestShown){S.digestShown=m}}
+ // advisory timeouts
+ const keep=[];for(const ar of S.pending){if(ar.applyAfter&&m-ar.born>=ar.applyAfter){S.decided.push({m,ar});S.answered[ar.id]='default';log(m,ar.agent,ar.headline,[['sup',`超时 → 按默认「${ar.fallback}」`],['act','进已替你决定']])}else keep.push(ar)}S.pending=keep;
+ // inbox TTL for advisory in inbox
+ if(!S.routed[m]){S.routed[m]=true;for(const ev of EVENTS.filter(e=>e.m===m))route(ev,m)}
+ if(NARR[m])setNarr(m,NARR[m]);else if(sc&&sc.note)setNarr(m,sc.note);
+ if(m>=75){S.playing=false;S.done=true;showSummary()}
+}
+function setNarr(m,html){$('#narrT').textContent=fmt(m);$('#narr').innerHTML=html}
+
+/* ---------- 渲染 ---------- */
+function render(){
+ const m=S.m,st=humanState(m);
+ $('#clock').textContent=fmt(m);
+ const hs=$('#hstate');hs.className='state '+st;hs.textContent={FOCUS:'FOCUS · 编辑中',BREAKPOINT:'断点 · 可打扰',AWAY:'AWAY · 开会中'}[st];
+ $('#focus').classList.toggle('on',S.over.focus);$('#away').classList.toggle('on',S.over.away);$('#away').textContent=S.over.away?'回来':'去开会';
+ // dots
+ const d=$('#dots');d.innerHTML='';const agents=['auth-migrate','db-cleanup','docs-sync'];
+ agents.forEach(a=>{const mine=S.inbox.filter(x=>x.agent===a&&!S.answered[x.id]);let s=null;if(mine.some(x=>x.level==='warning'))s='warn';else if(mine.some(x=>x.level==='caution'))s='needs';else if(mine.length)s='done';if(!s)return;const e=document.createElement('span');e.className='dot '+s;e.title=a;d.appendChild(e)});
+ // stream
+ const str=$('#stream');str.innerHTML=S.stream.slice(0,40).map(e=>`<div class="ev"><span class="t">${fmt(e.m)}</span><span class="a">${esc(e.agent)}</span><span>${esc(e.text)}</span><span class="r">${e.chips.map(c=>`<span class="chip ${c[0]}">${esc(c[1])}</span>`).join('')}</span></div>`).join('');
+ $('#evCount').textContent=S.stream.length?`${S.stream.length} 条`:'';
+ // inbox
+ const ib=$('#inbox');const vis=S.inbox.filter(x=>!S.answered[x.id]);
+ const ids=new Set([...ib.querySelectorAll('.card')].map(c=>c.dataset.id));
+ vis.forEach(ar=>{if(ids.has(ar.id))return;const c=document.createElement('article');c.className='card new';c.dataset.id=ar.id;
+  c.innerHTML=`<div class="head"><span class="lvl ${ar.level}"><i></i>${ar.level} · ${ar.cls}${ar.irreversible?' · 不可逆':''}</span><div class="ttl">${ar.ttl?`TTL ${ar.ttl} min`:'阻塞'}<br>无回应 → ${esc(ar.fallback)}</div><div class="headline">${esc(ar.headline)}</div></div>
+  <div class="ctx"><b>i_did</b><span>${esc(ar.ctx.i_did)}</span><b>i_need</b><span>${esc(ar.ctx.i_need)}</span></div>
+  <div class="why">${ar.delivered>ar.born?`<em>等了 ${ar.delivered-ar.born} 分钟</em>，在你的断点投递，而不是 ${fmt(ar.born)} 弹出来。`:ar.level==='warning'?'<em>立即投递</em>：对外副作用不可撤回，无视你的状态。':'在断点直接投递。'}</div>
+  <div class="opts">${ar.opts.map((o,k)=>`<button class="opt ${o.rec?'rec':''} ${o.danger?'danger':''}" data-k="${k}"><kbd>${k+1}</kbd>${esc(o.l)}${o.c?` <span class="c">${esc(o.c)}</span>`:''}</button>`).join('')}</div>`;
+  c.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>answer(ar,+b.dataset.k)));
+  ib.appendChild(c)});
+ $('#empty').hidden=vis.length>0;
+ const pend=S.pending.filter(x=>x.level==='caution').length,padv=S.pending.filter(x=>x.level==='advisory').length;
+ $('#emptySub').textContent=pend||padv?`${pend?pend+' 条 Caution 等你的下一个断点':''}${pend&&padv?'，':''}${padv?padv+' 条 Advisory 有安全默认':''}。`:'延迟中的请求会在你的下一个断点投递。';
+ const f=$('#fold');f.hidden=!(vis.length&&(pend||padv));f.textContent=`另有 ${pend} 条 Caution 等断点，${padv} 条 Advisory 有默认`;
+ // counters
+ $('#bI').textContent=S.base.i;$('#fI').textContent=S.ffa.i;$('#bF').textContent=S.base.f;$('#fF').textContent=S.ffa.f;$('#bC').textContent=S.base.c;$('#fC').textContent=S.ffa.c;
+ const mx=Math.max(S.base.c,1);$('#barB').style.width=Math.min(100,S.base.c/mx*100)+'%';$('#barF').style.width=Math.min(100,S.ffa.c/mx*100)+'%';
+ // phone
+ const pb=$('#phoneBody');if(S.phone&&!S.answered[S.phone.ar.id]){const ar=S.phone.ar;pb.innerHTML=`<div class="push"><div class="pt">WARNING · ${esc(ar.agent)} · ${fmt(S.phone.m)}</div>${esc(ar.headline)}<div style="color:var(--muted);font-size:11px;margin-top:2px">推荐：不发 · 无回应：不发 · 阻塞中</div><div class="pa"><button data-k="2">不发</button><button data-k="1">改后发</button><button data-k="0" style="color:var(--warn)">发送</button></div></div>`;pb.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>answer(ar,+b.dataset.k)))}else pb.innerHTML='<span style="color:var(--muted)">安静。</span>';
+ // decided
+ const dc=$('#decided');dc.innerHTML=S.decided.length?S.decided.map((d,i)=>`<div class="it"><span>${esc(d.ar.headline)}<small>${fmt(d.m)} 按默认「${esc(d.ar.fallback)}」· 为何没问：Advisory、你在 ${humanState(d.m)}</small></span><button class="undo" data-i="${i}">撤销</button></div>`).join(''):'<div style="color:var(--muted);font-size:12px">空。</div>';
+ dc.querySelectorAll('.undo').forEach(b=>b.addEventListener('click',()=>{const d=S.decided.splice(+b.dataset.i,1)[0];log(S.m,d.ar.agent,d.ar.headline,[['act','已撤销，Agent 收到通知']]);render()}));
+ // digest
+ const dg=$('#digest');dg.innerHTML=S.digest.length?S.digest.slice(-8).map(x=>`<div><b>${fmt(x.m)}</b>${esc(x.t)}</div>`).join(''):'<div>空。</div>';
+ $('#play').textContent=S.playing?'❚❚ 暂停':(S.done?'已结束':'▶ 播放');$('#play').disabled=S.done;
+ $('#speed').textContent=S.speed+'×';
+}
+function answer(ar,k){
+ if(ar.level==='warning'&&k===0&&!ar.armed){ar.armed=true;const c=document.querySelector(`[data-id="${ar.id}"] .opt[data-k="0"]`);if(c)c.innerHTML='<kbd>1</kbd>确认发送';const pb=$('#phoneBody button[data-k="0"]');if(pb)pb.textContent='确认发送';return}
+ S.answered[ar.id]=k;const st=humanState(S.m);
+ log(S.m,ar.agent,ar.headline,[['act',`你选了「${ar.opts[k].l}」`],['sup',`停留 ${Math.max(1,S.m-ar.delivered)} min`]]);
+ if(ar.id==='esc'&&k===0)S.digest.push({m:S.m,a:'db-cleanup',t:'带提示继续，第 4 轮 verifier 通过'});
+ if(ar.id==='evid'&&k===0)S.digest.push({m:S.m,a:'docs-sync',t:'已合并，理解签字：你'});
+ const el=document.querySelector(`[data-id="${ar.id}"]`);if(el){el.classList.add('gone');setTimeout(render,320)}else render();
+}
+function showSummary(){
+ const sm=$('#summary');sm.hidden=false;
+ const rows=[['Agent 事件总数（含合并前）',S.base.i,'—'],['打断你的次数',S.base.i,S.ffa.i],['在 FOCUS 中打断',S.base.f,S.ffa.f],['注意力成本估算（分钟）',S.base.c,S.ffa.c],['进 digest 的自动放行',`—`,S.digest.length],['已替你决定（可撤销）','—',S.decided.length],['超时或未答的请求','全部靠你','Advisory 按默认；Caution 等断点；Warning 阻塞']];
+ $('#sumTbl').innerHTML='<tr><th></th><th>逐条弹窗</th><th>FFA</th></tr>'+rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+ sm.scrollIntoView({behavior:'smooth',block:'start'});
+}
+/* ---------- 控制 ---------- */
+let timer=null;
+function step(){if(!S.playing)return;S.m++;tick(S.m);render();if(S.m>=75){S.playing=false;render();return}timer=setTimeout(step,1200/S.speed)}
+$('#play').addEventListener('click',()=>{if(S.done)return;S.playing=!S.playing;render();if(S.playing)step();else clearTimeout(timer)});
+$('#speed').addEventListener('click',()=>{S.speed=S.speed===1?3:S.speed===3?6:1;render()});
+$('#commit').addEventListener('click',()=>{S.over.bpUntil=S.m+1;S.over.away=false;setNarr(S.m,'<b>你提交了 commit（粗断点）。</b>延迟中的 Caution 现在投递。');tick(S.m);render()});
+$('#focus').addEventListener('click',()=>{S.over.focus=!S.over.focus;S.over.away=false;setNarr(S.m,S.over.focus?'<b>专注模式。</b>Advisory 与 Caution-soon 被抑制，退出后自动重现；Warning 仍会穿透。':'退出专注。');render()});
+$('#away').addEventListener('click',()=>{S.over.away=!S.over.away;S.over.focus=false;if(!S.over.away){S.over.bpUntil=S.m+1;setNarr(S.m,'<b>你回来了。</b>先看收件箱与 digest。');tick(S.m)}else setNarr(S.m,'<b>你离开了。</b>Advisory 会超时按默认执行，Warning 会推送到手机。');render()});
+$('#reset').addEventListener('click',()=>{clearTimeout(timer);S=fresh();$('#inbox').innerHTML='';$('#summary').hidden=true;setNarr(0,'<b>开始。</b>三个 Agent 已拿到计划批准，你在编辑代码。按播放，或直接用右上角按钮改变你的状态。');render()});
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.metaKey||e.ctrlKey)return;if(e.key===' '){e.preventDefault();$('#play').click()}
+ const vis=S.inbox.filter(x=>!S.answered[x.id]);const ar=vis[0];if(ar&&['1','2','3'].includes(e.key)&&ar.opts[+e.key-1])answer(ar,+e.key-1)});
+render();
+})();
+</script>
