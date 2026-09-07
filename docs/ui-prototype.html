@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<script>(function(){var m=/[?&]theme=(light|dark)/.exec(location.search);if(m)document.documentElement.setAttribute("data-theme",m[1])})();</script>
 <title>FFA Inbox</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -505,7 +507,7 @@ document.addEventListener('keydown',e=>{
  else if(cur&&k==='f')answer(cur.id,'f',false);
  else if(cur&&k==='l')answer(cur.id,'l',false);
 });
-function init(){$('#focusBtn').classList.toggle('on',state.focus);$('#focusBtn').textContent=state.focus?'专注中 · 退出':'专注 45 min';renderDots();renderInbox();renderDecided();renderGallery();showView('inbox')}
+function init(){if(location.hash==='#gallery'){setTimeout(()=>showView('gallery'),0)}$('#focusBtn').classList.toggle('on',state.focus);$('#focusBtn').textContent=state.focus?'专注中 · 退出':'专注 45 min';renderDots();renderInbox();renderDecided();renderGallery();showView('inbox')}
 init();
 })();
 </script>

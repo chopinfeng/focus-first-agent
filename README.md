@@ -4,6 +4,18 @@
 
 **文章**：[Agent 的断点不是人的断点](https://chopinfeng.github.io/focus-first-agent/)（GitHub Pages，源文件 `docs/index.html`，Markdown 版 `docs/ARTICLE.md`）可分享的页面：https://claude.ai/code/artifact/3618782c-3b93-4014-b88f-22361b492531
 
+## 截图
+
+| 实时运行中的收件箱（mock 提供商） | 阶段回看：四种呈现物 |
+|---|---|
+| ![实时收件箱](docs/screenshots/01-live-inbox.png) | ![阶段回看](docs/screenshots/02-live-review-panel.png) |
+
+| 收件箱原型与 14 种结构化控件 | Kernel Playground |
+|---|---|
+| ![场景库](docs/screenshots/05-prototype-gallery.png) | ![Playground](docs/screenshots/06-playground.png) |
+
+更多：`docs/screenshots/`。
+
 当前版本 **v0.2**（2026-09-03）：两轮共八路调研后的设计。
 
 - `docs/RESEARCH.md` — 调研综合（两轮）：问题数据、学术约束、产品模式、告警工程、观点批评、评测方法

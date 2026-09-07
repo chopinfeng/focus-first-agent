@@ -52,6 +52,10 @@ td .ffa{color:var(--done);font-weight:600}
 .bars svg{width:100%;height:auto;display:block}
 .bars text{font-family:var(--mono);font-size:11px;fill:var(--muted)}
 .bars .lab{fill:var(--ink)}
+.fig{margin:30px 0}
+.fig img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.fig figcaption{font-size:13px;color:var(--muted);line-height:1.55;margin-top:8px}
+.fig.wide{max-width:none}
 .rule{border:0;border-top:1px solid var(--line);margin:56px 0}
 .foot{max-width:680px;margin:0 auto;padding:0 24px 90px;font-size:14px;color:var(--muted)}
 .foot .links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 24px;margin:18px 0 26px}
@@ -112,11 +116,11 @@ td .ffa{color:var(--done);font-weight:600}
 
 <h2 id="s4"><span class="num">四</span>界面的成功状态是什么都没有</h2>
 <p>内核保护注意力，呈现它的界面不能反过来消耗注意力。我们从飞行甲板借了暗舱原则：正常时什么都不亮。Agent 在工作不显示，只有卡住、需要你、完成三种状态才出现一个 8 像素的点。没有未读数，没有红点，没有进度条，唯一允许的数字是专注模式下的"已抑制 N"，因为航空规范要求抑制必须可见。</p>
-<p>收件箱的一条请求首屏不超过 60 个汉字：级别、一句话说明对你的影响、四行上下文（你刚才在做什么、我做了什么、我需要什么、影响范围）、为何是现在、几个带后果的选项、不答会怎样、还剩多久。证据在展开层，因为信心不等于准确率，所以每条都能展开到测试日志、diff 和"什么能证明我错了"。所有操作单键完成，回答后原地淡出，不推挤别的条目。</p>
-<p>Coding Agent 需要人介入的场景我们数了十四种，每种一个结构化控件，人操作的是结构本身，返回给 Agent 的也是结构：计划批准是逐步可切换执行、到时问我、跳过的清单；批量文件写入是带增删行数的复选列表，范围外的默认不勾；合并冲突是每个 hunk 三列点选；证据包审阅是做了、没做、verifier 结论、逐条判对错的假设，架构级变更还要理解签字；对外发消息是收件方加逐字正文预览，发送要按两次。</p>
+<p>收件箱的一条请求首屏不超过 60 个汉字：级别、一句话说明对你的影响、四行上下文（你刚才在做什么、我做了什么、我需要什么、影响范围）、为何是现在、几个带后果的选项、不答会怎样、还剩多久。证据在展开层，因为信心不等于准确率，所以每条都能展开到测试日志、diff 和"什么能证明我错了"。所有操作单键完成，回答后原地淡出，不推挤别的条目。</p><figure class="fig"><a href="screenshots/04-inbox-prototype.png"><img src="screenshots/04-inbox-prototype.png" alt="收件箱原型：暗舱状态条，一条 Caution 的首屏：级别、headline、四行上下文、为何现在问、带后果的选项、不答会怎样、剩余 TTL。" loading="lazy"></a><figcaption>收件箱原型：暗舱状态条，一条 Caution 的首屏：级别、headline、四行上下文、为何现在问、带后果的选项、不答会怎样、剩余 TTL。</figcaption></figure>
+<p>Coding Agent 需要人介入的场景我们数了十四种，每种一个结构化控件，人操作的是结构本身，返回给 Agent 的也是结构：计划批准是逐步可切换执行、到时问我、跳过的清单；批量文件写入是带增删行数的复选列表，范围外的默认不勾；合并冲突是每个 hunk 三列点选；证据包审阅是做了、没做、verifier 结论、逐条判对错的假设，架构级变更还要理解签字；对外发消息是收件方加逐字正文预览，发送要按两次。</p><figure class="fig"><a href="screenshots/05-prototype-gallery.png"><img src="screenshots/05-prototype-gallery.png" alt="场景库：Coding Agent 需要人介入的 14 种场景，每种一个结构化控件。" loading="lazy"></a><figcaption>场景库：Coding Agent 需要人介入的 14 种场景，每种一个结构化控件。</figcaption></figure>
 
 <h2 id="s5"><span class="num">五</span>真实的 Agent 跑起来是什么样</h2>
-<p>设计写在纸上不算数。我们做了一个本地服务，让真实的 LLM Agent 在沙箱里做真实任务，每一次工具调用都经过内核路由，页面实时渲染，人的回答回传给 Agent。用智谱的 GLM-5 跑了六个任务：多语言 greet、清理过期文件、写 API 文档并回 issue、带零依赖约束的输入校验、需要人拍板的重命名、修一个失败的测试。</p>
+<p>设计写在纸上不算数。我们做了一个本地服务，让真实的 LLM Agent 在沙箱里做真实任务，每一次工具调用都经过内核路由，页面实时渲染，人的回答回传给 Agent。用智谱的 GLM-5 跑了六个任务：多语言 greet、清理过期文件、写 API 文档并回 issue、带零依赖约束的输入校验、需要人拍板的重命名、修一个失败的测试。</p><figure class="fig"><a href="screenshots/01-live-inbox.png"><img src="screenshots/01-live-inbox.png" alt="实时运行中的收件箱：左侧是每个工具调用的路由结果（放行进 digest、延迟到断点、flood 折叠），中间只有需要人的请求，右侧是三方对照与手机推送。" loading="lazy"></a><figcaption>实时运行中的收件箱：左侧是每个工具调用的路由结果（放行进 digest、延迟到断点、flood 折叠），中间只有需要人的请求，右侧是三方对照与手机推送。</figcaption></figure><figure class="fig"><a href="screenshots/02-live-done.png"><img src="screenshots/02-live-done.png" alt="三个 Agent 全部完成后：事件流里可以看到每条请求等了多久、在哪个断点投递、人选了什么。" loading="lazy"></a><figcaption>三个 Agent 全部完成后：事件流里可以看到每条请求等了多久、在哪个断点投递、人选了什么。</figcaption></figure>
 <p>同一套任务跑了三种方式。逐条弹窗：每个事件当场打断。bypass：零打断，一切按默认，人事后回看。FFA：内核路由，人每 50 秒有一个断点。合计成本等于打断成本，加事后阅读，加每个未经确认的不可逆动作折算 60 分钟善后。</p>
 <div class="tbl"><table>
 <tr><th></th><th>逐条弹窗</th><th>bypass 回看</th><th>FFA</th></tr>
@@ -132,7 +136,7 @@ td .ffa{color:var(--done);font-weight:600}
   <text class="lab" x="0" y="46">bypass</text><rect x="90" y="36" width="298" height="14" rx="2" fill="var(--faint)"/><text x="394" y="47">135</text>
   <text class="lab" x="0" y="78">FFA</text><rect x="90" y="68" width="49" height="14" rx="2" fill="var(--amber)"/><text x="145" y="79">22</text>
 </svg></div>
-<p>最有说服力的一条不是数字，是行为。同一个模型，bypass 模式下 docs-sync 问了一句"是否确认在 issue 上回复"，被默认为确认，评论就发出去了；FFA 模式下同样的问题被延迟到断点，人选了"不发"。模型没变，变的是谁在做决定。</p>
+<figure class="fig"><a href="screenshots/02-live-review-panel.png"><img src="screenshots/02-live-review-panel.png" alt="阶段回看面板：同一段执行切换四种呈现物，每种标出要读多少字、多少条目、有多少替你做的决定要自己发现。" loading="lazy"></a><figcaption>阶段回看面板：同一段执行切换四种呈现物，每种标出要读多少字、多少条目、有多少替你做的决定要自己发现。</figcaption></figure><p>最有说服力的一条不是数字，是行为。同一个模型，bypass 模式下 docs-sync 问了一句"是否确认在 issue 上回复"，被默认为确认，评论就发出去了；FFA 模式下同样的问题被延迟到断点，人选了"不发"。模型没变，变的是谁在做决定。</p>
 <p>真实运行还暴露了三个设计文档里没写到的缺陷，都已经修了。答过的 Advisory 仍会在超时时再执行一次默认。verifier 失败的证据包还是走了自动合并。最重要的一个：清理任务的 Agent 没有用删除工具，而是自己写了个脚本删文件，内核只看到一条白名单内的 node 命令。这正是"按效果分类"的意义所在，所以现在内核会在命令前后比对沙箱文件，发现删除就生成一条事后审计，并保留快照供恢复。</p>
 
 <h2 id="s6"><span class="num">六</span>怎么量</h2>
@@ -141,7 +145,7 @@ td .ffa{color:var(--done);font-weight:600}
 <p>模拟人的参数全部来自实证：专注段中位 35 分钟，陷阱识别率随会话内提示数指数衰减，一小时上浮超过 8 次进入橡皮章模式。模拟人本身要按 Collaborative Gym 的协议验证，真人分不出来才算数。</p>
 
 <h2 id="s7"><span class="num">七</span>还没做的</h2>
-<p>框架包 <code>@focus-first/ffa</code> 已经在仓库里，内核带 13 条不变量测试，浏览器里有可以直接玩的 Playground。Demo 服务能接 Anthropic、任何 OpenAI 兼容接口，也能用 mock 跑通。</p>
+<p>框架包 <code>@focus-first/ffa</code> 已经在仓库里，内核带 13 条不变量测试，浏览器里有可以直接玩的 Playground。Demo 服务能接 Anthropic、任何 OpenAI 兼容接口，也能用 mock 跑通。</p><figure class="fig"><a href="screenshots/06-playground.png"><img src="screenshots/06-playground.png" alt="Kernel Playground：同一份内核代码在浏览器里运行，左侧按钮产生事件，收件箱、digest、对照计数实时变化。" loading="lazy"></a><figcaption>Kernel Playground：同一份内核代码在浏览器里运行，左侧按钮产生事件，收件箱、digest、对照计数实时变化。</figcaption></figure>
 <p>没做的更多。信任账本的双向监测、人的状态推断、手机渠道、团队模式的升级阶梯都还在路线图上。Benchmark 的 30 个任务和 30 个陷阱还没有标注。最重要的，十五个实验一个都没跑，其中三个不需要写任何框架代码：把已有的 Claude Code 会话日志跑过准入门槛，看能砍掉多少；四十个人玩一局审批游戏，量陷阱识别率怎么随提示密度衰减；三十个人看同一批请求的三种呈现，看证据到底有没有提高准确率。</p>
 <blockquote>这才是把注意力当资源的意思：不是一个口号，而是一个可以被证伪的账本。</blockquote>
 <p>这些实验的结果会决定设计的下一版。如果准入门槛砍不掉三成请求，如果限速不能保住识别率，如果证据不提高准确率，那设计就该改。</p>

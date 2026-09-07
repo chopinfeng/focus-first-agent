@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<script>(function(){var m=/[?&]theme=(light|dark)/.exec(location.search);if(m)document.documentElement.setAttribute("data-theme",m[1])})();</script>
 <title>FFA Demo</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -437,6 +439,10 @@ $('#reset').addEventListener('click',()=>{clearTimeout(timer);S=fresh();$('#inbo
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'||e.metaKey||e.ctrlKey)return;if(e.key===' '){e.preventDefault();$('#play').click()}
  const vis=S.inbox.filter(x=>S.answered[x.id]===undefined);const ar=vis[0];if(ar&&['1','2','3'].includes(e.key)&&ar.opts[+e.key-1])answer(ar,+e.key-1)});
 render();
+(function(){const q=new URLSearchParams(location.search);const to=+q.get('auto');if(!to)return;
+ const ans=q.has('answer');
+ for(let m=1;m<=to;m++){S.m=m;tick(m);if(ans&&m%13===0){S.inbox.filter(x=>S.answered[x.id]===undefined&&x.level!=='warning').forEach(ar=>{const k=Math.max(0,ar.opts.findIndex(o=>o.rec));S.answered[ar.id]=k;log(m,ar.agent,ar.headline,[['act',`你选了「${ar.opts[k].l}」`]])})}}
+ render();if(S.done)showSummary();})();
 
 /* ---------- 实时模式：事件来自本地服务里的真实 LLM Agent ---------- */
 const LIVE={on:false,url:null,es:null,hs:'FOCUS'};
@@ -468,7 +474,7 @@ $('#live').addEventListener('click',()=>{
  const url=location.protocol.startsWith('http')?dflt:prompt('本地 FFA 服务地址',dflt);
  if(!url)return;$('#live').classList.add('on');liveConnect(url);
 });
-if(location.protocol.startsWith('http')&&/localhost|127\.0\.0\.1/.test(location.host)){$('#live').classList.add('on');liveConnect(location.origin)}
+if(location.protocol.startsWith('http')&&/localhost|127\.0\.0\.1/.test(location.host)&&!/[?&]auto=/.test(location.search)){$('#live').classList.add('on');liveConnect(location.origin)}
 // 实时模式下劫持控制与回答
 const _answer=answer;
 answer=function(ar,k){if(!LIVE.on)return _answer(ar,k);

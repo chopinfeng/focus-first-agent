@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<script>(function(){var m=/[?&]theme=(light|dark)/.exec(location.search);if(m)document.documentElement.setAttribute("data-theme",m[1])})();</script>
 <title>FFA Kernel Playground</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -397,5 +399,6 @@ function render(){const S=k.S,st=k.hs();
  $('#silent').innerHTML=S.review.silent.length?S.review.silent.map(x=>`<div><b>${x.level}</b>${esc(x.headline)} → ${esc(x.chosen)}${x.irreversible?' <span style="color:var(--warn)">不可逆</span>':''}</div>`).join(''):'<div style="color:var(--muted)">'+(mode==='bypass'?'还没有。':'仅在 bypass 模式记录。')+'</div>';
 }
 boot();
+if(/[?&]auto/.test(location.search)){setTimeout(()=>{E.write();E.delete();E.askinput();E.askgoal();E.flood();E.send();setTimeout(()=>{k.human('commit')},1200)},300)}
 })();
 </script>
