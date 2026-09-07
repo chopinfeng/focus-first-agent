@@ -1,0 +1,313 @@
+<title>FFA Inbox</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F3F5F4; --surface:#FFFFFF; --sunken:#E9EDEB; --ink:#172220; --muted:#6B7975; --line:#D5DDDA; --faint:#C7D0CC;
+  --needs:#C4700F; --needs-soft:#F6E5CF; --blocked:#C9A227; --done:#2F7A4E; --done-soft:#D9EBDF; --warn:#B42A26; --warn-soft:#F5DAD8;
+  --display:"Manrope","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;
+  --body:"IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;
+  --mono:"IBM Plex Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ground:#0F1614; --surface:#182120; --sunken:#121A18; --ink:#E4EBE8; --muted:#93A39E; --line:#2A3634; --faint:#3A4744;
+  --needs:#E39A3F; --needs-soft:#3A2A14; --blocked:#D4B24C; --done:#6CC08B; --done-soft:#163524; --warn:#E1655F; --warn-soft:#3D1A18;}}
+:root[data-theme="dark"]{
+  --ground:#0F1614; --surface:#182120; --sunken:#121A18; --ink:#E4EBE8; --muted:#93A39E; --line:#2A3634; --faint:#3A4744;
+  --needs:#E39A3F; --needs-soft:#3A2A14; --blocked:#D4B24C; --done:#6CC08B; --done-soft:#163524; --warn:#E1655F; --warn-soft:#3D1A18;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:14.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--needs);outline-offset:2px}
+kbd{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 5px;line-height:1.5;background:var(--surface)}
+/* status strip */
+.strip{height:34px;display:flex;align-items:center;gap:18px;padding:0 20px;border-bottom:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--muted)}
+.strip .dots{display:flex;gap:12px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:transparent;position:relative;display:inline-block}
+.dot.blocked{background:var(--blocked)} .dot.needs{background:var(--needs)} .dot.done{background:var(--done)} .dot.warn{background:var(--warn)} .dot.shelved{background:var(--faint)}
+.dot .tip{position:absolute;top:14px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--ink);color:var(--ground);font-size:11.5px;padding:3px 8px;border-radius:3px;opacity:0;pointer-events:none;transition:opacity .15s}
+.dot:hover .tip{opacity:1}
+.strip .right{margin-left:auto;display:flex;gap:14px;align-items:center}
+.strip .sup{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.toggle{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border:1px solid var(--line);border-radius:4px;font-size:12px;color:var(--muted)}
+.toggle.on{border-color:var(--ink);color:var(--ink)}
+/* shell */
+.shell{display:grid;grid-template-columns:150px minmax(0,1fr);max-width:980px;margin:0 auto;gap:36px;padding:28px 20px 80px}
+nav{font-size:13px;align-self:start;position:sticky;top:20px}
+nav .brand{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+nav button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:6px 8px;border-radius:4px;color:var(--muted)}
+nav button.active{background:var(--sunken);color:var(--ink);font-weight:500}
+nav button kbd{margin-left:auto}
+nav .keys{margin-top:26px;font-size:11.5px;color:var(--muted);line-height:1.9}
+nav .keys div{display:flex;gap:8px;align-items:center}
+main{min-width:0;max-width:640px}
+h1{font-family:var(--display);font-size:18px;font-weight:700;margin:0 0 4px}
+.sub{font-size:12.5px;color:var(--muted);margin:0 0 18px}
+.view{display:none}.view.active{display:block}
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;margin-bottom:12px;transition:opacity .2s,max-height .3s,margin .3s;overflow:hidden}
+.card.focus{border-color:var(--ink)}
+.card.gone{opacity:0;max-height:0;margin:0;border-width:0}
+.card .head{padding:14px 16px 0;display:grid;grid-template-columns:1fr auto;gap:4px 16px}
+.lvl{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;gap:6px;align-items:center}
+.lvl.caution{color:var(--needs)} .lvl.warning{color:var(--warn)} .lvl.advisory{color:var(--muted)}
+.lvl i{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
+.headline{font-family:var(--display);font-weight:700;font-size:15.5px;line-height:1.35;margin-top:2px}
+.ttl{grid-column:2;grid-row:1/3;text-align:right;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.6}
+.ctx{margin:10px 16px 0;display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px;padding:9px 11px;background:var(--sunken);border-radius:4px}
+.ctx b{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--muted);padding-top:2px}
+.why{margin:8px 16px 0;font-size:12.5px;color:var(--muted)}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin:10px 16px 0}
+.opt{display:inline-flex;gap:8px;align-items:baseline;padding:6px 11px;border:1px solid var(--line);border-radius:4px;background:var(--surface);font-size:13px}
+.opt:hover{border-color:var(--ink)}
+.opt.rec{border-color:var(--needs);background:var(--needs-soft);font-weight:600}
+.opt .cons{color:var(--muted);font-weight:400;font-size:12px}
+.foot{margin:10px 16px 0;padding:8px 0 12px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);align-items:center}
+.foot button{color:var(--muted);text-decoration:underline;text-decoration-color:var(--faint);text-underline-offset:3px}
+.foot button:hover{color:var(--ink)}
+.proof{display:none;margin:0 16px 12px;padding:10px 12px;border:1px dashed var(--line);border-radius:4px;font-size:12.5px}
+.proof.open{display:block}
+.proof .row{display:grid;grid-template-columns:auto 1fr;gap:2px 12px}
+.proof b{font-family:var(--mono);font-weight:500;font-size:11px;color:var(--muted)}
+.proof .ok{color:var(--done)}
+.fold{font-size:12.5px;color:var(--muted);padding:10px 2px}
+.fold button{color:var(--muted);text-decoration:underline;text-decoration-color:var(--faint);text-underline-offset:3px}
+.empty{padding:36px 0 10px;color:var(--muted);font-size:14px}
+.empty b{color:var(--ink);font-weight:500}
+/* decided */
+.dec .head{grid-template-columns:1fr auto}
+.undo{padding:5px 11px;border:1px solid var(--line);border-radius:4px;font-size:12.5px}
+.undo:hover{border-color:var(--ink)}
+.note{font-size:12.5px;color:var(--muted);margin:0 0 14px;padding:9px 12px;border-left:2px solid var(--line)}
+/* digest */
+.digest h3{font-family:var(--display);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px;font-weight:700}
+.digest .line{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.digest .line:last-child{border-bottom:0}
+.digest .line b{font-family:var(--mono);font-weight:500;font-size:11.5px;color:var(--muted);padding-top:2px}
+/* panel */
+.panel .row{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:center}
+.panel .row:last-child{border-bottom:0}
+.panel .lab{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.slider{display:flex;gap:4px}
+.slider span{flex:1;height:22px;border:1px solid var(--line);border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.slider span.cur{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.gauge{height:6px;background:var(--sunken);border-radius:3px;overflow:hidden}
+.gauge i{display:block;height:100%;background:var(--muted);width:33%}
+.dist{display:flex;height:8px;border-radius:3px;overflow:hidden;gap:2px}
+.dist i{display:block;height:100%}
+.classes{display:grid;grid-template-columns:1fr auto;gap:4px 14px;font-family:var(--mono);font-size:11.5px}
+.classes .lv{color:var(--muted)}
+.classes .auto{color:var(--done)}
+.ok-empty{color:var(--muted);font-size:12.5px}
+.foot-note{margin-top:34px;font-size:11.5px;color:var(--muted);line-height:1.7}
+@media (max-width:760px){.shell{grid-template-columns:1fr;gap:18px}nav{position:static}nav .keys{display:none}.ttl{grid-column:1;grid-row:auto;text-align:left}.card .head{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.dot.needs.breathe{animation:breathe 2s ease-out 1}@keyframes breathe{0%{box-shadow:0 0 0 0 var(--needs-soft)}100%{box-shadow:0 0 0 6px transparent}}}
+@media (prefers-reduced-motion:reduce){.card{transition:none}}
+</style>
+
+<div class="strip" role="status" aria-label="Agent 周边状态">
+  <div class="dots" id="dots"></div>
+  <span class="sup" id="supcount" hidden></span>
+  <div class="right">
+    <button class="toggle" id="focusBtn" aria-pressed="false" title="专注模式：抑制 Advisory 与 Caution-soon，退出后自动重现">专注 45 min</button>
+    <button class="toggle" id="resetBtn" title="重置示例数据">重置</button>
+  </div>
+</div>
+
+<div class="shell">
+<nav aria-label="视图">
+  <div class="brand">FFA</div>
+  <button data-view="inbox" class="active">收件箱 <kbd>g i</kbd></button>
+  <button data-view="decided">已替你决定 <kbd>g d</kbd></button>
+  <button data-view="digest">Digest <kbd>g g</kbd></button>
+  <button data-view="panel">自治面板 <kbd>g p</kbd></button>
+  <div class="keys">
+    <div><kbd>j</kbd><kbd>k</kbd> 上下</div>
+    <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 选项</div>
+    <div><kbd>e</kbd> 展开证据</div>
+    <div><kbd>s</kbd> snooze 到断点</div>
+    <div><kbd>f</kbd> 不该问我</div>
+    <div><kbd>l</kbd> 该早点问</div>
+  </div>
+</nav>
+
+<main>
+  <section class="view active" id="view-inbox">
+    <h1>收件箱</h1>
+    <p class="sub" id="inboxSub">按级别与剩余时间排序，不按时间。没有未读数。</p>
+    <div id="inboxList"></div>
+    <div class="fold" id="fold" hidden></div>
+    <div class="empty" id="empty" hidden><b>没有需要你的事。</b><br>下一次 digest 在 14:30。已抑制的会在专注结束后重现。</div>
+  </section>
+
+  <section class="view" id="view-decided">
+    <h1>已替你决定</h1>
+    <p class="sub">Advisory 级请求超时后按安全默认执行的记录。不可逆的动作永远不会出现在这里。</p>
+    <div class="note">每条都能撤销。按剩余可撤销时间排序，快过期的在上。</div>
+    <div id="decidedList"></div>
+  </section>
+
+  <section class="view digest" id="view-digest">
+    <h1>Digest</h1>
+    <p class="sub">13:58 在你的粗断点（commit）生成。≤ 25 行，无"全部已读"。</p>
+    <h3>需要你的</h3>
+    <div class="ok-empty" id="digestNeeds">已在收件箱，这里不重复。</div>
+    <h3>已替你决定</h3>
+    <div class="line"><b>auth-migrate</b><span>API 字段用 camelCase（与现有代码一致）· 可撤销至 15:20</span></div>
+    <h3>进度</h3>
+    <div class="line"><b>auth-migrate</b><span>做了：迁移 auth 路由，41/41 通过 · 下一步：schema 变更 · 风险：依赖你对 migration 的决定</span></div>
+    <div class="line"><b>db-cleanup</b><span>做了：清理 3 张临时表 · 下一步：等验证 · 风险：无</span></div>
+    <div class="line"><b>docs-sync</b><span>完成，证据包待看 · 6 文件 +212 −40 · verifier 通过</span></div>
+    <h3>账本</h3>
+    <div class="line"><b>shell:pnpm test</b><span>累计 10 次 verifier 通过，可升为自动放行 · <button class="undo" style="padding:2px 8px;font-size:12px">升级</button> <button class="undo" style="padding:2px 8px;font-size:12px">保持</button></span></div>
+  </section>
+
+  <section class="view panel" id="view-panel">
+    <h1>自治面板</h1>
+    <p class="sub">唯一允许出现数字的界面。默认不打开。</p>
+    <div class="row"><div class="lab">全局自治</div><div class="slider"><span>L0</span><span>L1</span><span>L2</span><span class="cur">L3</span><span>L4</span><span>L5</span></div></div>
+    <div class="row"><div class="lab">本小时上浮</div><div><div class="gauge"><i></i></div><div class="ok-empty" style="margin-top:4px">2 / 6 · 10 分钟窗口 0 / 1</div></div></div>
+    <div class="row"><div class="lab">级别分布 7 天</div><div><div class="dist"><i style="width:4%;background:var(--warn)"></i><i style="width:14%;background:var(--needs)"></i><i style="width:82%;background:var(--faint)"></i></div><div class="ok-empty" style="margin-top:4px">Warning 4% · Caution 14% · Advisory 82%（目标 5 / 15 / 80）</div></div></div>
+    <div class="row"><div class="lab">动作类</div><div class="classes">
+      <span>shell:pnpm test</span><span class="lv">ask · 证据 10/10</span>
+      <span>fs.write:src/**</span><span class="auto">auto · 撤回</span>
+      <span>fs.delete:db/**</span><span class="lv">ask · 不可逆</span>
+      <span>git.push:main</span><span class="lv">Warning · 永不自动</span>
+    </div></div>
+    <div class="row"><div class="lab">退化信号</div><div class="ok-empty">无。审查时长、否决率、证据展开率、反馈数均正常。</div></div>
+    <div class="row"><div class="lab">已抑制</div><div class="ok-empty" id="panelSup">0</div></div>
+  </section>
+
+  <div class="foot-note">原型说明：示例数据，非真实会话。这个界面的成功状态是空的：没有圆点、没有条目、没有数字。每个元素都对应 <code>docs/UI-UX.md</code> 里的一条原则。</div>
+</main>
+</div>
+
+<script>
+(function(){
+const AGENTS=[
+  {id:'auth',name:'auth-migrate',state:'needs'},
+  {id:'db',name:'db-cleanup',state:'blocked'},
+  {id:'docs',name:'docs-sync',state:'done'},
+];
+const ITEMS=[
+  {id:'ar1',level:'caution',kind:'approval · P1 · 不可逆 · input',agent:'auth-migrate',
+   headline:'要删除 3 个 2023 年的 migration 文件',
+   ctx:{you_were:'在 review PR #812',i_did:'迁移了 auth 路由，测试 41/41 通过',i_need:'确认能否删除 db/migrations/2023_*.sql',blast_radius:'本地与 CI；不影响生产'},
+   why:'下一步的 schema 变更依赖此决定',
+   opts:[{l:'删除',rec:true,c:'CI 重跑 12 min'},{l:'保留并加 deprecated 注释'},{l:'任务结束时再问'}],
+   ttl:'3h 41m',fallback:'无回应 → 保留',read:'约 20 秒',
+   proof:[['test_log','41/41 passed · log://test-run-88','ok'],['diff','6 files +212 −40 · diff://…',''],['prove_wrong','若任何环境仍引用 2023 schema 版本号','']],
+   suppressible:false},
+  {id:'ar2',level:'advisory',kind:'review · P2 · 可逆 · constraint',agent:'docs-sync',
+   headline:'docs-sync 完成，证据包待看',
+   ctx:{you_were:'在 review PR #812',i_did:'同步 API 文档 6 文件，verifier 通过',i_need:'看一眼意图差异，或让它自动合并',blast_radius:'docs/**，可逆'},
+   why:'P2 且验证通过，可自动合并；你要求 docs 变更先看一眼',
+   opts:[{l:'自动合并',rec:true,c:'可撤销'},{l:'展开证据包'},{l:'退回修改'}],
+   ttl:'到明天 09:00',fallback:'无回应 → 自动合并',read:'约 15 秒',
+   proof:[['intent','做了：同步 6 个端点的参数表；没做：示例代码（超出 scope）','ok'],['verifier','链接检查 0 失效 · 历史通过率 96%','ok'],['prove_wrong','若 OpenAPI 与文档字段名不一致','']],
+   suppressible:true},
+];
+const FOLDED=[{h:'db-cleanup：临时表清理等验证，无需你',},{h:'账本：pnpm test 可升级为自动放行'}];
+const DECIDED=[{id:'d1',agent:'auth-migrate',what:'API 响应字段用 camelCase',why:'Advisory 级、你不在、有安全默认（与现有代码一致）',left:'可撤销至 15:20'}];
+
+let state=load()||{answered:{},decided:{},focus:false,cursor:0,open:{}};
+function load(){try{const s=localStorage.getItem('ffa-proto');return s?JSON.parse(s):null}catch(e){return null}}
+function save(){try{localStorage.setItem('ffa-proto',JSON.stringify(state))}catch(e){}}
+
+const $=s=>document.querySelector(s);
+function renderDots(){
+  const d=$('#dots');d.innerHTML='';
+  AGENTS.forEach(a=>{
+    let st=a.state;
+    if(a.id==='auth'&&state.answered.ar1)st='working';
+    if(a.id==='docs'&&state.answered.ar2)st='working';
+    if(st==='working')return; // dark cockpit: working 不亮
+    const el=document.createElement('span');el.className='dot '+st+(st==='needs'?' breathe':'');
+    el.setAttribute('role','img');el.setAttribute('aria-label',a.name+' '+st);
+    el.innerHTML='<span class="tip">'+a.name+' · '+({needs:'需要你',blocked:'等验证',done:'完成，证据包待看'}[st])+'</span>';
+    el.addEventListener('click',()=>{showView('inbox')});
+    d.appendChild(el);
+  });
+  const sup=visibleItems(true).length;
+  const sc=$('#supcount');sc.hidden=!(state.focus&&sup>0);sc.textContent='已抑制 '+sup;
+  $('#panelSup').textContent=state.focus?sup:0;
+}
+function visibleItems(suppressedOnly){
+  return ITEMS.filter(it=>!state.answered[it.id]).filter(it=>{
+    const sup=state.focus&&it.suppressible;return suppressedOnly?sup:!sup;});
+}
+function renderInbox(){
+  const list=$('#inboxList');list.innerHTML='';
+  const items=visibleItems(false);
+  if(state.cursor>=items.length)state.cursor=Math.max(0,items.length-1);
+  items.forEach((it,i)=>{
+    const c=document.createElement('article');c.className='card'+(i===state.cursor?' focus':'');c.dataset.id=it.id;c.tabIndex=0;
+    c.innerHTML=`
+      <div class="head">
+        <span class="lvl ${it.level}"><i></i>${it.level} · ${it.kind}</span>
+        <div class="ttl">TTL ${it.ttl}<br>${it.fallback}</div>
+        <div class="headline">${it.headline}</div>
+      </div>
+      <div class="ctx"><b>you_were</b><span>${it.ctx.you_were}</span><b>i_did</b><span>${it.ctx.i_did}</span><b>i_need</b><span>${it.ctx.i_need}</span><b>blast_radius</b><span>${it.ctx.blast_radius}</span></div>
+      <div class="why">为何现在问：${it.why}</div>
+      <div class="opts">${it.opts.map((o,k)=>`<button class="opt${o.rec?' rec':''}" data-k="${k}"><kbd>${k+1}</kbd>${o.l}${o.c?` <span class="cons">${o.c}</span>`:''}</button>`).join('')}</div>
+      <div class="foot"><span>阅读 ${it.read}</span><span>${it.agent}</span><button data-act="proof">展开证据 <kbd>e</kbd></button><button data-act="snooze">snooze 到断点 <kbd>s</kbd></button><button data-act="f">不该问我 <kbd>f</kbd></button><button data-act="l">该早点问 <kbd>l</kbd></button></div>
+      <div class="proof${state.open[it.id]?' open':''}"><div class="row">${it.proof.map(p=>`<b>${p[0]}</b><span class="${p[2]}">${p[1]}</span>`).join('')}</div></div>`;
+    c.querySelectorAll('.opt').forEach(b=>b.addEventListener('click',()=>answer(it.id,+b.dataset.k)));
+    c.querySelector('[data-act=proof]').addEventListener('click',()=>toggleProof(it.id));
+    c.querySelector('[data-act=snooze]').addEventListener('click',()=>answer(it.id,'snooze'));
+    c.querySelector('[data-act=f]').addEventListener('click',()=>answer(it.id,'f'));
+    c.querySelector('[data-act=l]').addEventListener('click',()=>answer(it.id,'l'));
+    c.addEventListener('focus',()=>{state.cursor=i;highlight()});
+    list.appendChild(c);
+  });
+  const fold=$('#fold');
+  const supN=visibleItems(true).length;
+  if(items.length||supN){fold.hidden=false;fold.innerHTML=`另有 ${FOLDED.length} 条 Advisory 进 digest${supN?` · ${supN} 条已抑制，专注结束后重现`:''} <button id="openDigest">看 digest</button>`;$('#openDigest').addEventListener('click',()=>showView('digest'))}else fold.hidden=true;
+  $('#empty').hidden=items.length>0;
+  $('#inboxSub').textContent=items.length?'按级别与剩余时间排序，不按时间。没有未读数。':'';
+}
+function highlight(){document.querySelectorAll('#inboxList .card').forEach((c,i)=>c.classList.toggle('focus',i===state.cursor))}
+function toggleProof(id){state.open[id]=!state.open[id];save();document.querySelector(`[data-id="${id}"] .proof`).classList.toggle('open',state.open[id])}
+function answer(id,choice){
+  const el=document.querySelector(`[data-id="${id}"]`);if(!el)return;
+  state.answered[id]=choice;save();
+  el.classList.add('gone');
+  setTimeout(()=>{renderInbox();renderDots()},320);
+}
+function renderDecided(){
+  const l=$('#decidedList');l.innerHTML='';
+  DECIDED.filter(d=>!state.decided[d.id]).forEach(d=>{
+    const c=document.createElement('article');c.className='card dec';
+    c.innerHTML=`<div class="head"><span class="lvl advisory"><i></i>advisory · 已按默认执行 · ${d.agent}</span><button class="undo" style="grid-row:1/3">撤销</button><div class="headline">${d.what}</div></div>
+    <div class="why">为何没问：${d.why}</div><div class="foot"><span>${d.left}</span><span>撤销后 Agent 会收到通知并改回</span></div>`;
+    c.querySelector('.undo').addEventListener('click',()=>{state.decided[d.id]=true;save();c.classList.add('gone');setTimeout(renderDecided,320)});
+    l.appendChild(c);
+  });
+  if(!l.children.length)l.innerHTML='<div class="empty"><b>没有替你决定的事。</b></div>';
+}
+function showView(v){
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('active',s.id==='view-'+v));
+  document.querySelectorAll('nav button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+}
+document.querySelectorAll('nav button[data-view]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+$('#focusBtn').addEventListener('click',()=>{state.focus=!state.focus;save();$('#focusBtn').classList.toggle('on',state.focus);$('#focusBtn').setAttribute('aria-pressed',state.focus);$('#focusBtn').textContent=state.focus?'专注中 · 退出':'专注 45 min';renderInbox();renderDots()});
+$('#resetBtn').addEventListener('click',()=>{state={answered:{},decided:{},focus:false,cursor:0,open:{}};save();init()});
+let g=false;
+document.addEventListener('keydown',e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key;
+  if(g){g=false;({i:'inbox',d:'decided',g:'digest',p:'panel'})[k]&&showView(({i:'inbox',d:'decided',g:'digest',p:'panel'})[k]);return}
+  if(k==='g'){g=true;return}
+  const items=visibleItems(false);const cur=items[state.cursor];
+  if(k==='j'){state.cursor=Math.min(items.length-1,state.cursor+1);highlight()}
+  else if(k==='k'){state.cursor=Math.max(0,state.cursor-1);highlight()}
+  else if(cur&&['1','2','3'].includes(k)&&cur.opts[+k-1])answer(cur.id,+k-1);
+  else if(cur&&k==='e')toggleProof(cur.id);
+  else if(cur&&k==='s')answer(cur.id,'snooze');
+  else if(cur&&k==='f')answer(cur.id,'f');
+  else if(cur&&k==='l')answer(cur.id,'l');
+});
+function init(){$('#focusBtn').classList.toggle('on',state.focus);$('#focusBtn').textContent=state.focus?'专注中 · 退出':'专注 45 min';renderDots();renderInbox();renderDecided();showView('inbox')}
+init();
+})();
+</script>

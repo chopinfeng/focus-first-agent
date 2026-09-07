@@ -148,6 +148,7 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
     <li><a href="#scheduler">调度器</a></li>
     <li><a href="#lifecycle">生命周期</a></li>
     <li><a href="#surfaces">呈现面</a></li>
+    <li><a href="#uiux">界面规范</a></li>
     <li><a href="#adapters">适配器</a></li>
     <li><a href="#metrics">指标</a></li>
     <li><a href="#risks">风险</a></li>
@@ -466,6 +467,23 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
   <div class="card"><h4>Digest 与"已替你决定"队列</h4><p>Digest 按历史行动概率排序，禁止全部已读，不含不可逆项。Advisory 超时自动决策进独立审计队列，每条带 undo 与"为何没问"。另有自治面板：全局 autonomy slider、各动作类等级、速率与分布仪表、已抑制计数。</p></div>
   <div class="card"><h4>渠道与 transcript</h4><p>终端、桌面、手机 push、Slack。同一 AR 跨渠道同步，任一处回答即全局解决。transcript 降级为审计视图，默认折叠。</p></div>
 </div>
+
+<h2 id="uiux">界面规范：呈现本身不能消耗注意力</h2>
+<p>框架保护注意力，呈现它的界面也不能反过来消耗注意力。规范全文在 <code>docs/UI-UX.md</code>，可点的原型在 <a href="https://claude.ai/code/artifact/e388218d-e893-48f4-bf95-9824704f05f2">FFA Inbox</a>。一句话：<strong>界面的成功状态是"什么都没有"</strong>。正常运转的 FFA 界面在大多数时间应当是空的、暗的、静止的。</p>
+<div class="tbl"><table>
+<tr><th>原则</th><th>含义</th><th>反例</th></tr>
+<tr><td>暗舱</td><td>正常即无灯。working 不显示，只有 blocked、needs-you、done 出现</td><td>每个 Agent 一个 spinner，流式输出滚动</td></tr>
+<tr><td>一眼即懂</td><td>周边信息用颜色和位置编码，1 秒内读完</td><td>状态栏里写一句话进度</td></tr>
+<tr><td>一次一屏，不滚动</td><td>一条决策的全部信息在一屏内；首屏最多 5 条</td><td>无限列表</td></tr>
+<tr><td>决策优先于信息</td><td>首屏只放"要你做什么"和选项，证据在展开层</td><td>先放 diff 再放问题</td></tr>
+<tr><td>单键作答</td><td>每条请求可用 1、2、3 回答，键位可见</td><td>点开、滚动、再确认</td></tr>
+<tr><td>静止</td><td>内容不自动移动；新条目不推挤正在读的条目</td><td>列表顶部实时插入，toast 堆叠</td></tr>
+<tr><td>不计数</td><td>没有未读数、红点、进度条。唯一允许的数字是"已抑制 N"</td><td>角标 12</td></tr>
+<tr><td>默认无声</td><td>没有声音和振动；Warning 也只用一次可确认提示</td><td>每次完成叮一声</td></tr>
+<tr><td>说明代价</td><td>每条显示阅读预估、不答会怎样、剩余时间</td><td>只有 Approve / Deny</td></tr>
+<tr><td>可关的一切都可关</td><td>抑制、snooze、降级一键；被抑制的可见但不打扰</td><td>关掉通知就完全失联</td></tr>
+</table></div>
+<p>界面本身也有可度量的预算：周边状态每次注视 1 秒内读完，一条请求首屏 20 秒内读完且不超过 60 个汉字，决策所需滚动为零，digest 不超过 25 行，动效只在状态变化时出现一次。每个新元素上线前回答一个问题："去掉它，注意力成本会上升吗？"不能证明就不加。</p>
 
 <h2 id="adapters">适配器</h2>
 <p>不重造运行时。每个来源只做两件事：把事件翻译成 AR，把 AR 决议翻译回恢复调用。</p>
