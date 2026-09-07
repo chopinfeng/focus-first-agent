@@ -9,7 +9,7 @@
 - `docs/CHANGELOG-v0.2.md` — v0.1 → v0.2 逐条对比与调整决策，末尾附 v0.3 价值层增补
 - `docs/USE-CASES.md` — 20 个最终 use case，每个带可验收的注意力行为
 - `docs/TESTING.md` — 四层测试方案：内核单元、适配器集成、场景回放与 17 条不变量、真人评估与模拟器验证
-- `ffa/` — **框架包 `@focus-first/ffa`**：注意力内核（按效果分类、三级告警、断点延迟、合并、flood、超时默认、审批记忆、证据门控、bypass 模式与回看记录）、AttentionRequest JSON Schema、13 条不变量测试（`cd ffa && npm test`）。见 `ffa/README.md`
+- `ffa/` — **框架包 `@focus-first/ffa`**：注意力内核（按效果分类、三级告警、断点延迟、合并、flood、超时默认、审批记忆、证据门控、bypass 模式与回看记录）、AttentionRequest JSON Schema、13 条不变量测试（`cd ffa && npm test`）；浏览器里可运行的 Playground：https://claude.ai/code/artifact/0d34892a-7595-4acd-a0b0-701342fd278b （本地副本 `ffa/playground.html`）。见 `ffa/README.md`
 - `demo/` — **接入真实 LLM 的本地服务**（引用 `ffa/` 内核）：`npm start` 后打开 http://localhost:8765，三个 Agent 在沙箱里做真实任务，每个工具调用经内核路由后实时渲染到 demo 页面；支持 Anthropic SDK、任意 OpenAI 兼容接口，以及无需 key 的 `LLM_PROVIDER=mock`。见 `demo/README.md`
 - `docs/demo.html` — 动态演示：75 分钟压缩时段里三个 Agent 的事件如何被路由（合并、延迟到断点、超时默认、洪水折叠、Warning 穿透），与逐条弹窗并排计数（在线：https://claude.ai/code/artifact/3b2a08cc-af50-4794-994a-82feb8b1782b）
 - `docs/UI-UX.md` — 界面规范：以保护注意力为唯一目标的十条原则、界面注意力预算、逐个呈现面的规则与反模式清单；可点原型 `docs/ui-prototype.html`（在线：https://claude.ai/code/artifact/e388218d-e893-48f4-bf95-9824704f05f2）

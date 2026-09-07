@@ -2,7 +2,7 @@
 
 The framework half of Focus-First Agent: a small, dependency-free kernel that sits between any agent runtime and the person supervising it. Every event that might need a human becomes an **AttentionRequest** (`schema/attention_request.json`), and the kernel decides whether, when, and how it reaches the person, or whether it never should.
 
-Design and evidence: `../docs/DESIGN.md`. Live demo that drives it with real LLM agents: `../demo/`.
+Design and evidence: `../docs/DESIGN.md`. Live demo that drives it with real LLM agents: `../demo/`. Try the kernel in the browser: https://claude.ai/code/artifact/0d34892a-7595-4acd-a0b0-701342fd278b (`playground.html` embeds this exact file).
 
 ## What it does
 

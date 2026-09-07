@@ -149,6 +149,7 @@ figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
     <li><a href="#lifecycle">生命周期</a></li>
     <li><a href="#surfaces">呈现面</a></li>
     <li><a href="#uiux">界面规范</a></li>
+    <li><a href="#kernel">框架包</a></li>
     <li><a href="#adapters">适配器</a></li>
     <li><a href="#metrics">指标</a></li>
     <li><a href="#risks">风险</a></li>
@@ -484,6 +485,9 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
 <tr><td>可关的一切都可关</td><td>抑制、snooze、降级一键；被抑制的可见但不打扰</td><td>关掉通知就完全失联</td></tr>
 </table></div>
 <p>界面本身也有可度量的预算：周边状态每次注视 1 秒内读完，一条请求首屏 20 秒内读完且不超过 60 个汉字，决策所需滚动为零，digest 不超过 25 行，动效只在状态变化时出现一次。每个新元素上线前回答一个问题："去掉它，注意力成本会上升吗？"不能证明就不加。</p>
+
+<h2 id="kernel">框架包与 Playground</h2>
+<p>内核已作为独立包 <code>@focus-first/ffa</code> 提交到仓库的 <code>ffa/</code> 目录：按效果分类、三级告警、断点延迟、合并、flood、超时默认、审批记忆、证据门控、bypass 模式与回看记录，附 AttentionRequest JSON Schema 和 13 条不变量测试。同一份内核代码打包成了浏览器里可运行的 <a href="https://claude.ai/code/artifact/0d34892a-7595-4acd-a0b0-701342fd278b">Kernel Playground</a>：点按钮产生事件，看它如何路由、延迟、合并、超时，切到 bypass 看哪些事会静默发生。</p>
 
 <h2 id="adapters">适配器</h2>
 <p>不重造运行时。每个来源只做两件事：把事件翻译成 AR，把 AR 决议翻译回恢复调用。</p>
