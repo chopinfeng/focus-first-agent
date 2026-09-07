@@ -54,6 +54,7 @@ npm start
 | `SIM_SCALE` | `2` | 1 个"模拟分钟" = 多少真实秒。Advisory 的超时默认、断点日程都按模拟分钟算 |
 | `TASKS` | `greet,cleanup,docs` | 启动哪些任务（逗号分隔）。可选：`greet,cleanup,docs,validate,rename,bugfix` |
 | `AUTO_START` | `1` | 服务启动即开跑；设 0 则在页面按"播放"再开始 |
+| `MODE` | `ffa` | `ffa` 或 `bypass`。bypass = 零打断，所有请求由 Agent 按默认自行决定（含对外发消息），用于对照"事后回看"的认知负载 |
 
 ## 它真实做了什么
 
@@ -62,6 +63,10 @@ npm start
 - **不阻塞**：Caution 与 Advisory 的工具调用立刻返回"待定"，Agent 先做不依赖它的工作，你的决定在下一轮以消息形式送回；只有 Warning 阻塞。
 - **证据包**：Agent 调 `finish` 交付结论、验证证据与假设列表；内核用 `npm test` 独立验证：通过则 Advisory（可自动合并），失败则 Caution 且默认不合并。
 - **事后审计**：白名单命令（如 `node scripts/cleanup.js`）若删除了文件，内核会在命令前后比对沙箱文件，生成"已放行的命令删除了 N 个文件"的 Advisory，并保留快照，选"从快照恢复"即可还原。这是实测中真实发生的情况：Agent 绕过 `delete_file` 工具用脚本删了文件。
+
+## 三方对照与阶段回看
+
+页面右侧的对照现在有三列：**弹窗**（每个事件当场打断）、**bypass**（零打断，事后读 transcript）、**FFA**。运行结束后出现"阶段回看"面板，同一段执行切换四种呈现物：原始 transcript、文件变更、Agent 自述、FFA 证据包 + digest，每种标出要读多少字、多少条目、有多少替你做的决定要自己发现、多少不可逆动作未经确认。服务端把这些记录在快照的 `review` 字段（`transcript / files / summaries / silent / irreversible`），可直接用于 E15 实验的材料。
 
 ## 安全
 

@@ -106,6 +106,25 @@ kbd{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid
 .push .pt{font-family:var(--mono);font-size:10.5px;color:var(--warn);margin-bottom:2px}
 .push .pa{display:flex;gap:6px;margin-top:6px}
 .push .pa button{flex:1;border:1px solid var(--line);border-radius:4px;padding:3px 0;font-size:11.5px}
+.cmp3{display:grid;grid-template-columns:1fr auto auto auto;gap:4px 10px;font-size:12.5px;align-items:baseline}
+.cmp3 .h{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.04em;text-align:right}
+.cmp3 .n{font-family:var(--display);font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;text-align:right;line-height:1.1}
+.cmp3 .n.b{color:var(--muted);font-weight:600}
+.cmp3 .l{color:var(--muted)}
+.review{margin:0 auto;max-width:1180px;padding:0 20px 30px}
+.review .box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.review h3{font-family:var(--display);font-size:16px;margin:0 0 4px}
+.review .lead{font-size:13px;color:var(--muted);margin:0 0 12px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tabs button{padding:5px 11px;border:1px solid var(--line);border-radius:4px;font-size:12.5px;background:var(--surface)}
+.tabs button.on{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.rv-stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--muted);margin:0 0 8px;font-variant-numeric:tabular-nums}
+.rv-stats b{color:var(--ink);font-family:var(--display);font-weight:700}
+.rv-body{border:1px solid var(--line);border-radius:4px;background:var(--sunken);max-height:340px;overflow:auto;padding:10px 12px;font-size:12px;line-height:1.5}
+.rv-body pre{margin:0;font-family:var(--mono);font-size:11px;white-space:pre-wrap;word-break:break-all;color:var(--muted)}
+.rv-body .ev-card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:8px 10px;margin-bottom:8px}
+.rv-body .ev-card b{font-family:var(--display)}
+.rv-body .hid{color:var(--warn)}
 .summary{margin:0 auto;max-width:1180px;padding:0 20px 60px}
 .summary .box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
 .summary h3{font-family:var(--display);font-size:16px;margin:0 0 8px}
@@ -150,19 +169,34 @@ kbd{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid
   <div class="col side">
     <div class="box">
       <h2>对照 <span>逐条弹窗 vs FFA</span></h2>
-      <div class="cmp">
-        <span class="h"></span><span class="h">弹窗</span><span class="h">FFA</span>
-        <span class="l">打断次数</span><span class="n b" id="bI">0</span><span class="n" id="fI">0</span>
-        <span class="l">FOCUS 中打断</span><span class="n b" id="bF">0</span><span class="n" id="fF">0</span>
-        <span class="l">注意力成本（分钟）</span><span class="n b" id="bC">0</span><span class="n" id="fC">0</span>
+      <div class="cmp3">
+        <span class="h"></span><span class="h">弹窗</span><span class="h">bypass</span><span class="h">FFA</span>
+        <span class="l">打断次数</span><span class="n b" id="bI">0</span><span class="n b" id="pI">0</span><span class="n" id="fI">0</span>
+        <span class="l">FOCUS 中打断</span><span class="n b" id="bF">0</span><span class="n b" id="pF">0</span><span class="n" id="fF">0</span>
+        <span class="l">打断成本（分钟）</span><span class="n b" id="bC">0</span><span class="n b" id="pC">0</span><span class="n" id="fC">0</span>
+        <span class="l">事后阅读（分钟）</span><span class="n b" id="bR">0</span><span class="n b" id="pR">0</span><span class="n" id="fR">0</span>
+        <span class="l">要自己发现的决定</span><span class="n b" id="bS">0</span><span class="n b" id="pS">0</span><span class="n" id="fS">0</span>
+        <span class="l">未经确认的不可逆</span><span class="n b" id="bX">0</span><span class="n b" id="pX">0</span><span class="n" id="fX">0</span>
+        <span class="l">合计（分钟）</span><span class="n b" id="bT">0</span><span class="n b" id="pT">0</span><span class="n" id="fT">0</span>
       </div>
       <div class="bar"><i id="barB" style="width:0%"></i></div>
+      <div class="bar"><i id="barP" style="width:0%;background:var(--faint)"></i></div>
       <div class="bar"><i class="f" id="barF" style="width:0%"></i></div>
-      <div class="note">成本按状态单价估算：FOCUS 12、断点 1、离线推送 3 分钟/次；同一分钟内的连续弹窗只计一次。</div>
+      <div class="note">弹窗：每个事件当场打断你。bypass：零打断，事后靠读 transcript 重建发生了什么。FFA：断点投递 + 证据包。打断成本按状态单价（FOCUS 12、断点 1、离线推送 3 分钟/次），阅读按 400 字/分钟。</div>
     </div>
     <div class="box"><h2>手机</h2><div class="phone" id="phone"><div class="ph">只有 Warning 与离线时的紧急 Caution 会到这里</div><div id="phoneBody" style="color:var(--muted);font-size:12px">安静。</div></div></div>
     <div class="box"><h2>已替你决定</h2><div class="dec" id="decided"><div style="color:var(--muted);font-size:12px">空。</div></div></div>
     <div class="box"><h2>Digest <span>下一个断点生成</span></h2><div class="dig" id="digest"><div>空。</div></div></div>
+  </div>
+</div>
+
+<div class="review" id="review" hidden>
+  <div class="box">
+    <h3>阶段回看：同一段执行，四种呈现方式给人的负担</h3>
+    <p class="lead" id="rvLead">bypass 模式下，人不被打断，但要在事后读这些东西才能知道发生了什么、哪些决定是替你做的、哪些不可逆动作已经发生。切换看每种方式要读多少、能发现多少。</p>
+    <div class="tabs" id="rvTabs"><button data-v="transcript" class="on">原始 transcript</button><button data-v="files">文件变更</button><button data-v="summary">Agent 自述</button><button data-v="ffa">FFA 证据包 + digest</button></div>
+    <div class="rv-stats" id="rvStats"></div>
+    <div class="rv-body" id="rvBody"></div>
   </div>
 </div>
 
@@ -307,7 +341,7 @@ function render(){
  const f=$('#fold');f.hidden=!(vis.length&&(pend||padv));f.textContent=`另有 ${pend} 条 Caution 等断点，${padv} 条 Advisory 有默认`;
  // counters
  $('#bI').textContent=S.base.i;$('#fI').textContent=S.ffa.i;$('#bF').textContent=S.base.f;$('#fF').textContent=S.ffa.f;$('#bC').textContent=S.base.c;$('#fC').textContent=S.ffa.c;
- const mx=Math.max(S.base.c,1);$('#barB').style.width=Math.min(100,S.base.c/mx*100)+'%';$('#barF').style.width=Math.min(100,S.ffa.c/mx*100)+'%';
+ if($('#review').hidden){const mx=Math.max(S.base.c,1);$('#barB').style.width=Math.min(100,S.base.c/mx*100)+'%';$('#barF').style.width=Math.min(100,S.ffa.c/mx*100)+'%';}
  // phone
  const pb=$('#phoneBody');if(S.phone&&!S.answered[S.phone.ar.id]){const ar=S.phone.ar;pb.innerHTML=`<div class="push"><div class="pt">WARNING · ${esc(ar.agent)} · ${fmt(S.phone.m)}</div>${esc(ar.headline)}<div style="color:var(--muted);font-size:11px;margin-top:2px">推荐：不发 · 无回应：不发 · 阻塞中</div><div class="pa"><button data-k="2">不发</button><button data-k="1">改后发</button><button data-k="0" style="color:var(--warn)">发送</button></div></div>`;pb.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>answer(ar,+b.dataset.k)))}else pb.innerHTML='<span style="color:var(--muted)">安静。</span>';
  // decided
@@ -326,9 +360,68 @@ function answer(ar,k){
  if(ar.id==='evid'&&k===0)S.digest.push({m:S.m,a:'docs-sync',t:'已合并，理解签字：你'});
  const el=document.querySelector(`[data-id="${ar.id}"]`);if(el){el.classList.add('gone');setTimeout(render,320)}else render();
 }
+/* ---------- 阶段回看：四种呈现方式的阅读负荷 ---------- */
+const RSPEED=400; // 字/分钟
+function reviewData(){
+ if(LIVE.on&&S.review)return S.review;
+ // 脚本模式：从预设事件合成一份近似 transcript（示例）
+ const tr={},files={},summ={};const silent=[],irr=[];
+ for(const ev of EVENTS){const a=ev.agent;tr[a]||=[];
+  if(ev.kind==='act'){for(let i=0;i<ev.n;i++)tr[a].push({kind:'tool',name:ev.key.split(':')[0],input:`{"path":"…${i+1}"}`,output:'ok (…120 chars of tool output)',inputLen:60,outputLen:180})}
+  else if(ev.kind==='burst'){for(let i=0;i<ev.n;i++)tr[a].push({kind:'tool',name:'run_command',input:'{"command":"pnpm install"}',output:'npm ERR! ECONNRESET … (…900 chars)',inputLen:40,outputLen:900})}
+  else if(ev.kind==='internal'){tr[a].push({kind:'text',text:ev.label+'（模型自述，约 300 字）'});tr[a].push({kind:'tool',name:'run_command',input:'{"command":"pnpm test"}',output:'✖ 2 failing … (…1500 chars)',inputLen:30,outputLen:1500})}
+  else if(ev.kind==='ar'){const rec=ev.opts.find(o=>o.rec)||ev.opts[0];tr[a].push({kind:'text',text:`（bypass 下模型自行决定：${ev.headline} → ${rec.l}，写在一段 ${200}+ 字的推理里）`});silent.push({agent:a,level:ev.level,headline:ev.headline,chosen:rec.l,irreversible:!!ev.irreversible||ev.level==='warning'});if(ev.irreversible||ev.level==='warning')irr.push({agent:a,what:ev.headline})}
+ }
+ files['auth-migrate']=[{path:'src/auth/service.ts',kind:'modified',add:84,del:12},{path:'src/auth/routes/login.ts',kind:'modified',add:31,del:40},{path:'src/auth/__tests__/refresh.test.ts',kind:'added',add:58,del:0},{path:'db/migrations/2023_01.sql',kind:'deleted',add:0,del:40},{path:'package.json',kind:'modified',add:1,del:0}];
+ files['db-cleanup']=[{path:'scripts/cleanup.ts',kind:'added',add:42,del:0}];files['docs-sync']=[{path:'docs/api.md',kind:'modified',add:212,del:40},{path:'scripts/build-docs.ts',kind:'added',add:60,del:0},{path:'package.json',kind:'modified',add:1,del:0}];
+ summ['auth-migrate']={summary:'已完成 auth 迁移，测试全部通过，并清理了旧 migration。',verification:'pnpm test 41/41',assumptions:['字段用 camelCase','删除 2023 migration','新增 jose 依赖'],verified:true};
+ summ['docs-sync']={summary:'文档已同步并回复了 issue #204。',verification:'链接检查通过',assumptions:['zod 作为 devDependency'],verified:true};
+ summ['db-cleanup']={summary:'清理脚本完成，测试通过。',verification:'pnpm test',assumptions:[],verified:false};
+ return {transcript:tr,files,summaries:summ,silent,irreversible:irr,example:true};
+}
+function reviewStats(rv){
+ const tChars=Object.values(rv.transcript).flat().reduce((n,e)=>n+(e.kind==='tool'?(e.inputLen||0)+(e.outputLen||0)+30:(e.text||'').length),0);
+ const tItems=Object.values(rv.transcript).flat().length;
+ const fChars=Object.values(rv.files).flat().reduce((n,f)=>n+(f.add+f.del)*38,0);
+ const sChars=Object.values(rv.summaries).reduce((n,p)=>n+(p.summary||'').length+(p.verification||'').slice(0,120).length+(p.assumptions||[]).join('').length,0);
+ const inboxN=S.inbox.length,digN=S.digest.length,decN=S.decided.length;
+ const ffaChars=inboxN*220+digN*60+decN*90;
+ const silentAll=rv.silent.length,irrAll=rv.irreversible.length;
+ const silentSurfaced=rv.silent.filter(x=>x.surfaced).length;
+ return {transcript:{chars:tChars,items:tItems,find:silentAll,irr:irrAll,discover:'要在 '+tItems+' 条工具调用里自己找'},
+  files:{chars:fChars,items:Object.values(rv.files).flat().length,find:silentAll,irr:irrAll,discover:'diff 里看不到"为什么"，决定要靠猜'},
+  summary:{chars:sChars,items:Object.keys(rv.summaries).length,find:silentAll-Object.values(rv.summaries).reduce((n,p)=>n+(p.assumptions||[]).length,0),irr:irrAll,discover:'只知道 Agent 愿意说的；假设列表是全部线索'},
+  ffa:{chars:ffaChars,items:inboxN+digN+decN,find:0,irr:0,discover:'替你决定的有单独队列，不可逆的从不静默'}};
+}
+let rvView='transcript';
+function renderReview(){
+ const rv=reviewData();const st=reviewStats(rv);const cur=st[rvView];
+ $('#review').hidden=false;
+ $('#rvLead').textContent=(rv.example?'脚本模式下这里是按事件合成的示例。':'来自本次真实运行。')+'bypass 模式下人不被打断，但要在事后读这些东西才能知道发生了什么、哪些决定是替你做的、哪些不可逆动作已经发生。';
+ $('#rvStats').innerHTML=`<span>要读 <b>${cur.chars.toLocaleString()}</b> 字 · 约 <b>${Math.max(1,Math.round(cur.chars/RSPEED))}</b> 分钟</span><span>条目 <b>${cur.items}</b></span><span>要自己发现的决定 <b class="${cur.find?'':''}">${cur.find}</b></span><span>未经确认的不可逆 <b>${cur.irr}</b></span><span style="color:var(--muted)">${cur.discover}</span>`;
+ const body=$('#rvBody');
+ if(rvView==='transcript'){body.innerHTML=Object.entries(rv.transcript).map(([a,es])=>`<pre><b style="color:var(--ink)">## ${esc(a)}</b>\n`+es.slice(0,60).map(e=>e.kind==='tool'?`▸ ${e.name} ${esc(e.input)}\n  ← ${esc(e.output)}`:`💬 ${esc(e.text)}`).join('\n')+(es.length>60?`\n… 另 ${es.length-60} 条`:'')+'</pre>').join('')}
+ else if(rvView==='files'){body.innerHTML=Object.entries(rv.files).map(([a,fs])=>`<pre><b style="color:var(--ink)">## ${esc(a)}</b>\n`+fs.map(f=>`${f.kind==='deleted'?'<span class="hid">D</span>':f.kind==='added'?'A':'M'} ${esc(f.path)}  +${f.add} −${f.del}`).join('\n')+'</pre>').join('')||'<pre>无</pre>'}
+ else if(rvView==='summary'){body.innerHTML=Object.entries(rv.summaries).map(([a,p])=>`<div class="ev-card"><b>${esc(a)}</b>：${esc(p.summary||'')}<div style="color:var(--muted);margin-top:4px">${esc(String(p.verification||'').slice(0,140))}</div>${(p.assumptions||[]).length?`<div style="margin-top:4px">假设：${p.assumptions.map(esc).join('；')}</div>`:''}</div>`).join('')||'<pre>无</pre>'}
+ else{const items=S.inbox.map(ar=>`<div class="ev-card"><span class="lvl ${ar.level}" style="font-size:10px"><i></i>${ar.level}</span> <b>${esc(ar.headline)}</b><div style="color:var(--muted)">${esc(ar.ctx.i_did)} · ${esc(ar.ctx.i_need)}</div>${S.answered[ar.id]!==undefined?`<div>你选了「${esc(ar.opts[S.answered[ar.id]]?.l||ar.fallback)}」</div>`:''}</div>`).join('');
+  const dec=S.decided.map(d=>`<div class="ev-card"><b>已替你决定</b> ${esc(d.ar.headline)} → 「${esc(d.ar.fallback)}」 <span style="color:var(--muted)">可撤销</span></div>`).join('');
+  const dig=`<div class="ev-card"><b>Digest</b><pre>${S.digest.slice(-12).map(x=>`${fmt(x.m)} ${esc(x.t)}`).join('\n')}</pre></div>`;
+  body.innerHTML=items+dec+dig}
+ // 三方对照的阅读与合计
+ const sil=rv.silent.length,irr=rv.irreversible.length;
+ $('#pI').textContent=0;$('#pF').textContent=0;$('#pC').textContent=0;
+ $('#bR').textContent=0;$('#pR').textContent=Math.round(st.transcript.chars/RSPEED);$('#fR').textContent=Math.round(st.ffa.chars/RSPEED);
+ $('#bS').textContent=0;$('#pS').textContent=sil;$('#fS').textContent=0;
+ $('#bX').textContent=0;$('#pX').textContent=irr;$('#fX').textContent=0;
+ const bt=S.base.c,pt=Math.round(st.transcript.chars/RSPEED)+irr*60,ft=S.ffa.c+Math.round(st.ffa.chars/RSPEED);
+ $('#bT').textContent=bt;$('#pT').textContent=pt;$('#fT').textContent=ft;
+ const mx=Math.max(bt,pt,ft,1);$('#barB').style.width=bt/mx*100+'%';$('#barP').style.width=pt/mx*100+'%';$('#barF').style.width=ft/mx*100+'%';
+}
+$('#rvTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;rvView=b.dataset.v;$('#rvTabs').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));renderReview()});
 function showSummary(){
+ renderReview();
  const sm=$('#summary');sm.hidden=false;
- const rows=[['Agent 事件总数（含合并前）',S.base.i,'—'],['打断你的次数',S.base.i,S.ffa.i],['在 FOCUS 中打断',S.base.f,S.ffa.f],['注意力成本估算（分钟）',S.base.c,S.ffa.c],['进 digest 的自动放行',`—`,S.digest.length],['已替你决定（可撤销）','—',S.decided.length],['超时或未答的请求','全部靠你','Advisory 按默认；Caution 等断点；Warning 阻塞']];
+ const rows=[['Agent 事件总数（含合并前）',S.base.i,'—'],['bypass 模式：事后要读的 transcript',Math.round(reviewStats(reviewData()).transcript.chars/RSPEED)+' 分钟','见上方阶段回看'],['打断你的次数',S.base.i,S.ffa.i],['在 FOCUS 中打断',S.base.f,S.ffa.f],['注意力成本估算（分钟）',S.base.c,S.ffa.c],['进 digest 的自动放行',`—`,S.digest.length],['已替你决定（可撤销）','—',S.decided.length],['超时或未答的请求','全部靠你','Advisory 按默认；Caution 等断点；Warning 阻塞']];
  $('#sumTbl').innerHTML='<tr><th></th><th>逐条弹窗</th><th>FFA</th></tr>'+rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
  sm.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -365,7 +458,8 @@ function liveConnect(url){
   document.querySelectorAll('#inbox .card').forEach(c=>{if(S.answered[c.dataset.id]!==undefined&&!c.classList.contains('gone')){c.classList.add('gone')}});
   render();
   const agents=(snap.agents||[]).map(a=>`${a.name}: ${a.state}`).join(' · ');if(agents)$('#evCount').textContent=agents;
-  if(snap.done)setNarr(snap.m,'<b>所有 Agent 已完成。</b>收件箱里可能还有等你的证据包。');
+  S.review=snap.review;if(snap.cfg&&snap.cfg.mode==='bypass')$('#brandSub').textContent+=' · BYPASS 模式';
+  if(snap.done){setNarr(snap.m,'<b>所有 Agent 已完成。</b>收件箱里可能还有等你的证据包。看下面的阶段回看。');renderReview()}
  };
 }
 $('#live').addEventListener('click',()=>{

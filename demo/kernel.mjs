@@ -6,13 +6,14 @@ import { EventEmitter } from "node:events";
 const PRICE = { FOCUS: 12, BREAKPOINT: 1, AWAY: 3 };
 const ALLOW_CMD = /^(node|npm (test|run)\b|ls|cat|wc)\b/;
 
-export function createKernel({ scale = 2 } = {}) {
+export function createKernel({ scale = 2, mode = "ffa" } = {}) {
   const ev = new EventEmitter();
   const t0 = Date.now();
   const S = {
     live: true, m: 0, hs: "FOCUS", stream: [], inbox: [], pending: [], decided: [], digest: [],
     answered: {}, base: { i: 0, f: 0, c: 0, last: -9 }, ffa: { i: 0, f: 0, c: 0, last: -9 },
-    phone: null, done: false, agents: [], started: false, routed: {},
+    phone: null, done: false, agents: [], started: false, routed: {}, mode,
+    review: { transcript: {}, files: {}, summaries: {}, silent: [], irreversible: [] },   // what a human would have to read afterwards
   };
   const over = { focus: false, away: false, bpUntil: -1 };
   const ars = new Map();          // id -> ar (with resolver)
@@ -21,6 +22,8 @@ export function createKernel({ scale = 2 } = {}) {
   const recent = new Map();       // agent -> [minute,...] for flood
   const flooded = new Map();      // agent -> flood ar id
   let seq = 0;
+  const approved = new Map();     // agent -> Set(key): human (or bypass) approved this exact effect once; the retry passes as ACT
+  const markApproved = (ar, k) => { if (k === 0 && ar.key && ["fs.delete", "fs.write.out", "proc.exec.other"].includes(ar.effect)) (approved.get(ar.agent) || approved.set(ar.agent, new Set()).get(ar.agent)).add(ar.key); };
 
   const now = () => Math.floor((Date.now() - t0) / 1000 / scale);
   function hs(m = now()) {
@@ -120,6 +123,15 @@ export function createKernel({ scale = 2 } = {}) {
     const ar = mkAR(c);
     const promise = new Promise((res) => { ar.resolver = res; });
     ar.promise = promise;
+    if (mode === "bypass") {   // bypass/auto mode: nobody is asked; the agent's own preference wins, silently
+      const k = Math.max(0, ar.opts.findIndex((o) => o.rec)); const chosen = ar.level === "warning" ? 0 : k;   // bypass sends the message
+      S.review.silent.push({ m, agent: ar.agent, level: ar.level, headline: ar.headline, chosen: ar.opts[chosen].l, irreversible: !!ar.irreversible || ar.level === "warning" });
+      if (ar.irreversible || ar.level === "warning") S.review.irreversible.push({ m, agent: ar.agent, what: ar.headline });
+      log(m, ar.agent, ar.headline, [["sup", `bypass · 静默选了「${ar.opts[chosen].l}」`], ["base", "弹窗"]]);
+      S.answered[ar.id] = chosen; markApproved(ar, chosen); ar.resolver({ k: chosen, option: ar.opts[chosen].l, how: "bypass" });
+      const q = resolvedQ.get(ar.agent) || []; q.push({ id: ar.id, headline: ar.headline, option: ar.opts[chosen].l, how: "bypass" }); resolvedQ.set(ar.agent, q);
+      changed(); return { status: "bypassed", id: ar.id, k: chosen, option: ar.opts[chosen].l };   // execute now, as auto mode would
+    }
     if (ar.level === "warning") { deliver(ar, m, true); changed(); return { status: "blocked", id: ar.id, promise }; }
     if (ar.level === "advisory") { log(m, ar.agent, ar.headline, [["sup", "Advisory · exception"], ["defer", ar.applyAfter ? `${ar.applyAfter} 分钟后按默认` : "等断点"], ["base", "弹窗"]]); S.pending.push(ar); changed(); return { status: "pending", id: ar.id, promise }; }
     if (st === "BREAKPOINT" || ar.urg === "now") deliver(ar, m, false);
@@ -128,7 +140,7 @@ export function createKernel({ scale = 2 } = {}) {
   }
   function resolve(ar, k, how) {
     if (S.answered[ar.id] !== undefined) return;
-    S.answered[ar.id] = k; const opt = ar.opts[k] || ar.opts[0];
+    S.answered[ar.id] = k; markApproved(ar, k); const opt = ar.opts[k] || ar.opts[0];
     const q = resolvedQ.get(ar.agent) || []; q.push({ id: ar.id, headline: ar.headline, option: opt.l, how }); resolvedQ.set(ar.agent, q);
     ar.resolver && ar.resolver({ k, option: opt.l, how });
     (waiters.get(ar.agent) || []).splice(0).forEach((w) => w());
@@ -140,7 +152,7 @@ export function createKernel({ scale = 2 } = {}) {
     if (st === "BREAKPOINT") { const keep = []; for (const ar of S.pending) { if (ar.delivered !== undefined) { keep.push(ar); continue; } if (ar.level === "caution" || (ar.level === "advisory" && !ar.applyAfter)) deliver(ar, m, false); else { deliver(ar, m, false); keep.push(ar); } } S.pending = keep; }
     const keep = [];
     for (const ar of S.pending) {
-      if (ar.applyAfter && m - ar.born >= ar.applyAfter) { const k = ar.opts.findIndex((o) => o.rec); S.decided.push({ m, ar }); log(m, ar.agent, ar.headline, [["sup", `超时 → 按默认「${ar.fallback}」`], ["act", "进已替你决定"]]); resolve(ar, k < 0 ? 0 : k, "default"); }
+      if (ar.applyAfter && m - ar.born >= ar.applyAfter) { const k = ar.opts.findIndex((o) => o.rec); S.decided.push({ m, ar }); S.review.silent.push({ m, agent: ar.agent, level: ar.level, headline: ar.headline, chosen: ar.fallback, irreversible: false, surfaced: true }); log(m, ar.agent, ar.headline, [["sup", `超时 → 按默认「${ar.fallback}」`], ["act", "进已替你决定"]]); resolve(ar, k < 0 ? 0 : k, "default"); }
       else keep.push(ar);
     }
     S.pending = keep; changed();
@@ -164,6 +176,10 @@ export function createKernel({ scale = 2 } = {}) {
     hasOpen(agent) { return [...ars.values()].some((a) => a.agent === agent && S.answered[a.id] === undefined && a.kind === "ar"); },
     waitAny(agent) { return new Promise((res) => { const w = waiters.get(agent) || []; w.push(res); waiters.set(agent, w); }); },
     addAgent(a) { S.agents.push(a); changed(); },
+    isApproved(agent, key) { return approved.get(agent)?.has(key) || false; },
+    record(agent, entry) { (S.review.transcript[agent] ||= []).push(entry); },
+    recordFiles(agent, files) { S.review.files[agent] = files; },
+    recordSummary(agent, packet) { S.review.summaries[agent] = packet; changed(); },
     setAgent(id, patch) { const a = S.agents.find((x) => x.id === id); if (a) Object.assign(a, patch); changed(); },
     deliverEvidence(task, packet, archLevel, verified = true) {
       const needsHuman = archLevel || !verified;

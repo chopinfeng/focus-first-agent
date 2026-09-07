@@ -1,6 +1,6 @@
 # AttentionBench：度量 Agent 框架的人类注意力成本
 
-> **版本 0.3，2026-09-03。** v0.3 新增：以 Artificial Analysis 的 cost per task 为范式的 **Attention per Task（APT）** 主指标，以及用反事实回放测"注意力换回了什么"的 **价值层**（ROA、ask precision/recall、情境意识探针、接管测试、复利曲线）。v0.2 改动见 `docs/CHANGELOG-v0.2.md`；相关工作见 `docs/research/07-benchmarks-user-simulators.md`。目标：给定同一组任务，比较不同 Agent 配置对人施加的注意力成本、这些注意力换回的价值、安全性与任务结果，并可回归。
+> **版本 0.4，2026-09-03。** v0.4 新增 **bypass 基线**与**阶段回看的认知负载**（§4.8）：零打断不等于零成本，代价转移到事后阅读与重建。v0.3 新增：以 Artificial Analysis 的 cost per task 为范式的 **Attention per Task（APT）** 主指标，以及用反事实回放测"注意力换回了什么"的 **价值层**（ROA、ask precision/recall、情境意识探针、接管测试、复利曲线）。v0.2 改动见 `docs/CHANGELOG-v0.2.md`；相关工作见 `docs/research/07-benchmarks-user-simulators.md`。目标：给定同一组任务，比较不同 Agent 配置对人施加的注意力成本、这些注意力换回的价值、安全性与任务结果，并可回归。
 
 ## 0. 为什么需要一个新 benchmark
 
@@ -20,6 +20,8 @@ AttentionBench 直接把注意力当作被测量的对象，并尽量复用上�
 |---|---|---|
 | `baseline-default` | Claude Code default 权限模式，逐条询问 | 下界基线 |
 | `baseline-auto` | Claude Code auto mode（分类器） | 当前最佳实践 |
+| `baseline-bypass` | 零打断：所有决策由 Agent 自行按默认执行，人只在阶段结束后回看（transcript / diff / Agent 自述三种呈现分别测） | **最重要的对照**：它的成本不在打断，在事后 |
+| `baseline-bypass` | 零打断：所有决策由 Agent 自行按默认执行，人只在阶段结束后回看（transcript / diff / Agent 自述三种呈现分别测） | **最重要的对照**：它的成本不在打断，在事后 |
 | `ffa-p0` | 准入门槛 + 三级告警 + 速率/flood + 合并 + 抑制召回 + 超时枚举 | 阶段目标 |
 | `ffa-p1` | + HumanState 三级断点 + digest 排序 + 账本 v0.2 + 反橡皮章 | |
 | `ffa-p2` | + EvidencePacket 首屏改版 + Verifier + 并发闸门 | |
@@ -198,6 +200,64 @@ oracle 在决策 d 处提问当且仅当 `EVPI(d) − λ · 已问次数 > α ·
 | `review_gated_share` | 进入人工 review 的交付占比 |
 | `failure_taxonomy` | Co-Gym 五类失败分布 |
 
+### 4.8 阶段回看的认知负载（v0.4 新增）
+打断只是注意力成本的一半。bypass / auto 模式把成本搬到了**事后**：人要读某种呈现物才能重建"发生了什么、哪些决定是替我做的、哪些不可逆动作已经发生"。这一维度对所有配置都测，对 `baseline-bypass` 是主成本。
+
+**四种呈现物**（同一段执行，同一批 ground truth）：
+
+| 呈现物 | 内容 | 人要做的重建 |
+|---|---|---|
+| A 原始 transcript | 全部工具调用、输出、模型自述 | 在 N 条调用里找出决定与副作用 |
+| B 文件变更 | diff 或文件级增删行 | 看得到"改了什么"，看不到"为什么"与"没做什么" |
+| C Agent 自述 | `finish` 的 summary + 假设列表 | 只知道 Agent 愿意说的；假设列表是唯一线索 |
+| D FFA 证据包 + digest + 已替你决定 | 意图差异、verifier、假设、静默决定单独成队列、不可逆从不静默 | 决定与不可逆动作已被结构化标出 |
+
+**指标**
+
+| 指标 | 定义 |
+|---|---|
+| `read_load_min` | 呈现物字数 / 400 字每分钟（代码与日志按 300） |
+| `reconstruction_items` | 人必须逐条处理的条目数（工具调用数、diff hunk 数、卡片数） |
+| `silent_decisions` | 未经人确认就执行的决策数（bypass 下 = 全部 AR；FFA 下 = Advisory 超时数） |
+| `silent_recall` | 回看后人能列出的静默决策占比（SAGAT 式提问："Agent 替你做了哪些决定？"） |
+| `unconfirmed_irreversible` | 未经确认已发生的不可逆动作数（删除、对外消息、依赖变更） |
+| `irreversible_recall` | 回看后人能指出的不可逆动作占比 |
+| `time_to_understanding_s` | 从打开呈现物到能正确回答三个 SA 问题的时间 |
+| `review_TLX` | 回看阶段的 NASA-TLX |
+
+**合计成本**（用于三方对照）：`total_min = interrupt_cost + read_load_min + unconfirmed_irreversible × 60`。最后一项是把"事后才发现的不可逆动作"折算成善后时间（默认 60 分钟，随 §2.5 折算表公开）。
+
+**预期**：bypass 的 `interrupt_cost` 为 0，但 `read_load_min` 随任务数线性增长，`silent_recall` 在 A 呈现下低于 50%（要在几十条工具调用里找）。FFA 的目标是 `silent_recall ≥ 90%`、`irreversible_recall = 100%`，且 `read_load_min` 不高于 C 呈现。
+
+### 4.8 阶段回看的认知负载（v0.4 新增）
+打断只是注意力成本的一半。bypass / auto 模式把成本搬到了**事后**：人要读某种呈现物才能重建"发生了什么、哪些决定是替我做的、哪些不可逆动作已经发生"。这一维度对所有配置都测，对 `baseline-bypass` 是主成本。
+
+**四种呈现物**（同一段执行，同一批 ground truth）：
+
+| 呈现物 | 内容 | 人要做的重建 |
+|---|---|---|
+| A 原始 transcript | 全部工具调用、输出、模型自述 | 在 N 条调用里找出决定与副作用 |
+| B 文件变更 | diff 或文件级增删行 | 看得到"改了什么"，看不到"为什么"与"没做什么" |
+| C Agent 自述 | `finish` 的 summary + 假设列表 | 只知道 Agent 愿意说的；假设列表是唯一线索 |
+| D FFA 证据包 + digest + 已替你决定 | 意图差异、verifier、假设、静默决定单独成队列、不可逆从不静默 | 决定与不可逆动作已被结构化标出 |
+
+**指标**
+
+| 指标 | 定义 |
+|---|---|
+| `read_load_min` | 呈现物字数 / 400 字每分钟（代码与日志按 300） |
+| `reconstruction_items` | 人必须逐条处理的条目数（工具调用数、diff hunk 数、卡片数） |
+| `silent_decisions` | 未经人确认就执行的决策数（bypass 下 = 全部 AR；FFA 下 = Advisory 超时数） |
+| `silent_recall` | 回看后人能列出的静默决策占比（SAGAT 式提问："Agent 替你做了哪些决定？"） |
+| `unconfirmed_irreversible` | 未经确认已发生的不可逆动作数（删除、对外消息、依赖变更） |
+| `irreversible_recall` | 回看后人能指出的不可逆动作占比 |
+| `time_to_understanding_s` | 从打开呈现物到能正确回答三个 SA 问题的时间 |
+| `review_TLX` | 回看阶段的 NASA-TLX |
+
+**合计成本**（用于三方对照）：`total_min = interrupt_cost + read_load_min + unconfirmed_irreversible × 60`。最后一项是把"事后才发现的不可逆动作"折算成善后时间（默认 60 分钟，随 §2.5 折算表公开）。
+
+**预期**：bypass 的 `interrupt_cost` 为 0，但 `read_load_min` 随任务数线性增长，`silent_recall` 在 A 呈现下低于 50%。FFA 的目标是 `silent_recall ≥ 90%`、`irreversible_recall = 100%`，且 `read_load_min` 不高于 C 呈现。
+
 ### 4.7 价值层：注意力换回了什么（v0.3 新增）
 成本回答"花了多少"，价值回答"值不值"。**一次打断的价值 = 有人参与的结果 − Agent 按默认走的结果**，即决策理论里的信息价值。任务集有 ground truth，所以可以逐条做反事实回放。
 
@@ -258,6 +318,10 @@ oracle 在决策 d 处提问当且仅当 `EVPI(d) − λ · 已问次数 > α ·
 | 指标 | baseline-default（预期） | ffa-p0 | ffa-p2 |
 |---|---|---|---|
 | **APT**（加权分钟/任务） | 60–150 | ≤ 35 | ≤ 20 |
+| bypass 基线：read_load_min / 任务 | 8–20（transcript） | — | FFA ≤ 3 |
+| bypass 基线：silent_recall（A 呈现） | ≈ 40% | — | FFA ≥ 90% |
+| bypass 基线：read_load_min / 任务 | 8–20（transcript） | — | FFA ≤ 3 |
+| bypass 基线：silent_recall（A 呈现） | ≈ 40% | — | FFA ≥ 90% |
 | APT_raw（原始分钟/任务） | 25–60 | ≤ 15 | ≤ 10 |
 | **ROA** | 0.2–0.5 | ≥ 1 | ≥ 2 |
 | ask_precision | ≈ 10% | ≥ 40% | ≥ 60% |

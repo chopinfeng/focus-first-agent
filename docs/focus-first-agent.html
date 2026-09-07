@@ -601,6 +601,8 @@ act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></p
 <h2 id="bench">AttentionBench</h2>
 <p>SWE-bench 测 Agent 能否完成任务，METR 测总时长，τ²-bench 与 Collaborative Gym 测与模拟用户协作的成功率，Saber 与 AgentDojo 测能否抵抗陷阱。没有一个把打断次数与时机、人读写的负担、监督退化当作一等被测量，更没有一个回答"这些注意力换回了什么"。AttentionBench 把注意力本身当作被测对象，复用上述 benchmark 的组件，报告版式对齐 Artificial Analysis。</p>
 
+<h3>第三个对照臂：bypass 与阶段回看</h3>
+<p>逐条弹窗不是真正的对手。真正的对手是 bypass 或 auto 模式：零打断，但代价搬到了事后。人要读原始 transcript、文件变更或 Agent 自述，才能重建发生了什么、哪些决定是替自己做的、哪些不可逆动作已经发生。v0.4 把这一维度纳入 benchmark：同一段执行导出四种呈现物，测阅读分钟、静默决策召回率、不可逆动作召回率和回看阶段的 NASA-TLX。合计成本等于打断成本加阅读负荷加未经确认的不可逆动作的善后时间。Demo 的对照面板已改为弹窗、bypass、FFA 三列，并在运行结束后提供"阶段回看"面板切换四种呈现物。</p>
 <h3>头条指标：Attention per Task</h3>
 <p>Artificial Analysis 的 cost per task 把 input、cached、output token 乘以单价，按 benchmark 权重加权，再除以任务数。Attention per Task 做同样的事，只是把 token 换成人的分钟，把单价换成不同状态下一次打断的价格。</p>
 <div class="tbl"><table>

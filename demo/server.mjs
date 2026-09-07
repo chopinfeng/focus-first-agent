@@ -13,11 +13,12 @@ const SCALE = +(process.env.SIM_SCALE || 2);
 const cfg = { provider: process.env.LLM_PROVIDER || "anthropic", model: process.env.LLM_MODEL || "claude-opus-5", baseUrl: process.env.LLM_BASE_URL, apiKey: process.env.LLM_API_KEY, fallbacks: process.env.LLM_FALLBACKS !== "0" };
 const taskIds = (process.env.TASKS || "greet,cleanup,docs").split(",").map((s) => s.trim()).filter((s) => TASKS[s]);
 
-const kernel = createKernel({ scale: SCALE });
+const MODE = process.env.MODE === "bypass" ? "bypass" : "ffa";
+const kernel = createKernel({ scale: SCALE, mode: MODE });
 const clients = new Set();
 const log = (s) => console.log(new Date().toISOString().slice(11, 19), s);
 kernel.ev.on("change", broadcast);
-function snapshot() { const { S } = kernel; return JSON.stringify({ ...S, m: kernel.now(), hs: kernel.hs(), inbox: S.inbox.map(strip), pending: S.pending.map(strip), decided: S.decided.map((d) => ({ m: d.m, ar: strip(d.ar) })), phone: S.phone ? { m: S.phone.m, ar: strip(S.phone.ar) } : null, cfg: { provider: cfg.provider, model: cfg.model, scale: SCALE } }); }
+function snapshot() { const { S } = kernel; return JSON.stringify({ ...S, m: kernel.now(), hs: kernel.hs(), inbox: S.inbox.map(strip), pending: S.pending.map(strip), decided: S.decided.map((d) => ({ m: d.m, ar: strip(d.ar) })), phone: S.phone ? { m: S.phone.m, ar: strip(S.phone.ar) } : null, cfg: { provider: cfg.provider, model: cfg.model, scale: SCALE, mode: MODE } }); }
 function strip(ar) { const { resolver, promise, ...rest } = ar; return rest; }
 function broadcast() { const data = `data: ${snapshot()}\n\n`; for (const res of clients) res.write(data); }
 
@@ -47,4 +48,4 @@ const server = http.createServer(async (req, res) => {
   }
   res.writeHead(404); res.end("not found");
 });
-server.listen(PORT, () => { log(`FFA live demo on http://localhost:${PORT}  provider=${cfg.provider} model=${cfg.model} tasks=${taskIds.join(",")}`); if (process.env.AUTO_START !== "0") start(); });
+server.listen(PORT, () => { log(`FFA live demo on http://localhost:${PORT}  mode=${MODE} provider=${cfg.provider} model=${cfg.model} tasks=${taskIds.join(",")}`); if (process.env.AUTO_START !== "0") start(); });

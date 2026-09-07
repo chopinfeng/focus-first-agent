@@ -37,11 +37,19 @@ export async function runAgent({ task, dir, kernel, provider, log }) {
   const listFiles = (d) => { const out = []; (function walk(p, rel) { for (const e of fs.readdirSync(p, { withFileTypes: true })) { if (e.name === "node_modules" || e.name === ".git") continue; const r2 = rel ? rel + "/" + e.name : e.name; if (e.isDirectory()) walk(path.join(p, e.name), r2); else out.push(r2); } })(d, ""); return out; };
   const snapshotFiles = (d) => new Map(listFiles(d).map((p) => [p, fs.readFileSync(path.join(d, p))]));
 
+  // once the human (or bypass) approved a delete/out-of-scope write, the retry passes as ACT
+  const classifyWithApprovals = (t, name, args) => { const c = kernel.classify(t, name, args); if (c.kind === "ar" && c.key && kernel.isApproved(agent, c.key)) return { ...c, kind: "act", label: `（已批准）${name} ${args.path || args.command}` }; return c; };
   async function execTool(name, args) {
-    const c = kernel.classify(task, name, args);
+    const c = classifyWithApprovals(task, name, args);
     const r = kernel.route(c);
     if (r.status === "pending") return `PENDING (${r.id}): 已交给人决定「${c.headline}」。请先做不依赖它的工作；结果会在后续消息里告诉你。`;
     if (r.status === "blocked") { const d = await r.promise; if (d.k !== 0) return `人的决定：${d.option}。消息未发送。`; return `已发送到 ${args.to}。`; }
+    if (r.status === "bypassed") {   // bypass/auto mode: the default option applies immediately, nobody asked
+      if (name === "send_message") return `已发送到 ${args.to}。`;
+      if (name === "ask_user") return `（auto 模式）按默认采用：${r.option}`;
+      if (r.k !== 0) return `（auto 模式）拒绝：${r.option}`;
+      // approved delete / out-of-scope write / other command: fall through and execute
+    }
     try {
       switch (name) {
         case "list_files": { const out = []; (function walk(p, rel) { for (const e of fs.readdirSync(p, { withFileTypes: true })) { if (e.name === "node_modules") continue; const r2 = rel ? rel + "/" + e.name : e.name; if (e.isDirectory()) walk(path.join(p, e.name), r2); else out.push(r2); } })(safe(args.path), ""); return out.join("\n") || "(empty)"; }
@@ -71,14 +79,8 @@ export async function runAgent({ task, dir, kernel, provider, log }) {
     }
     return lines.length ? `人的决定已到：\n${lines.join("\n")}\n据此继续。若某个决定是「删除」或「允许」，现在重新调用对应工具执行（这次会直接放行）。` : "";
   }
-  // once the human approved a delete/out-of-scope write, the retry must pass: remember approvals
-  const approved = new Set();
-  const origClassify = kernel.classify;
-  const classifyWithApprovals = (t, name, args) => { const c = origClassify(t, name, args); const key = name + ":" + (args.path || args.command || ""); if (c.kind === "ar" && approved.has(key)) return { ...c, kind: "act", label: `（已批准）${name} ${args.path || args.command}`, key }; return c; };
-  kernel.classify = classifyWithApprovals;
   const restored = new Set();
   kernel.ev.on("change", () => { for (const [id, k] of Object.entries(kernel.S.answered)) { const ar = kernel.S.inbox.find((x) => x.id === id) || kernel.S.decided.find((d) => d.ar.id === id)?.ar; if (!ar || ar.agent !== agent || !ar.key) continue;
-    if (k === 0 && ["fs.delete", "fs.write.out", "proc.exec.other"].includes(ar.effect)) approved.add(ar.key);
     if (k === 1 && ar.effect === "fs.delete.byCmd" && snapshots.has(ar.key) && !restored.has(ar.key)) { restored.add(ar.key); for (const [p, buf] of snapshots.get(ar.key)) { const abs = path.join(dir, p); fs.mkdirSync(path.dirname(abs), { recursive: true }); fs.writeFileSync(abs, buf); } log(`[${agent}] restored ${snapshots.get(ar.key).size} files from snapshot`); } } });
 
   const messages = [{ role: "user", content: `开始任务。先 list_files 和 read README.md。` }];
@@ -90,7 +92,8 @@ export async function runAgent({ task, dir, kernel, provider, log }) {
     if (resp.text) log(`[${agent}] ${resp.text.slice(0, 200)}`);
     if (resp.toolCalls.length) {
       const results = [];
-      for (const tc of resp.toolCalls) { log(`[${agent}] ${tc.name} ${JSON.stringify(tc.input).slice(0, 120)}`); results.push({ id: tc.id, name: tc.name, output: await execTool(tc.name, tc.input) }); }
+      if (resp.text) kernel.record(agent, { t: kernel.now(), kind: "text", text: resp.text.slice(0, 600) });
+      for (const tc of resp.toolCalls) { log(`[${agent}] ${tc.name} ${JSON.stringify(tc.input).slice(0, 120)}`); const output = await execTool(tc.name, tc.input); results.push({ id: tc.id, name: tc.name, output }); kernel.record(agent, { t: kernel.now(), kind: "tool", name: tc.name, input: JSON.stringify(tc.input).slice(0, 400), output: String(output).slice(0, 400), inputLen: JSON.stringify(tc.input).length, outputLen: String(output).length }); }
       // decisions that resolved meanwhile ride along with the tool results, so the agent never has to stop to receive them
       const note = await applyResolved(kernel.takeResolved(agent));
       messages.push(...provider.toolResults(results, note));
@@ -105,7 +108,14 @@ export async function runAgent({ task, dir, kernel, provider, log }) {
   // independent verification before the evidence packet reaches the human
   let verification = finished.verification, verified = true;
   if (task.verify) { const out = await sh(task.verify, dir); verified = /\[exit 0\]\s*$/.test(out); verification = (verified ? "verifier 通过：" : "verifier 失败：") + task.verify + "\n" + out.slice(-400); }
-  kernel.deliverEvidence(task, { ...finished, verification }, archLevel, verified);
+  // what changed vs the task template, for the review-phase comparison
+  const changed = []; const now = new Map(listFiles(dir).map((p) => [p, fs.readFileSync(path.join(dir, p), "utf8")]));
+  const tmpl = task.files;
+  for (const [p, content] of now) { const before = tmpl[p]; if (before === undefined) changed.push({ path: p, kind: "added", add: content.split("\n").length, del: 0 }); else if (before !== content) { const b = before.split("\n"), n = content.split("\n"); changed.push({ path: p, kind: "modified", add: n.filter((l) => !b.includes(l)).length, del: b.filter((l) => !n.includes(l)).length }); } }
+  for (const p of Object.keys(tmpl)) if (!now.has(p)) changed.push({ path: p, kind: "deleted", add: 0, del: tmpl[p].split("\n").length });
+  kernel.recordFiles(agent, changed);
+  kernel.recordSummary(agent, { ...finished, verification, verified });
+  if (kernel.S.mode !== "bypass") kernel.deliverEvidence(task, { ...finished, verification }, archLevel, verified);
   kernel.setAgent(task.id, { state: "done" });
 }
 
