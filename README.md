@@ -1,6 +1,8 @@
 # Focus First Agent
 
-一个把**人的注意力**当作一等调度资源的 Agent 框架设计。可分享的页面：https://claude.ai/code/artifact/3618782c-3b93-4014-b88f-22361b492531
+一个把**人的注意力**当作一等调度资源的 Agent 框架设计。
+
+**文章**：[Agent 的断点不是人的断点](https://chopinfeng.github.io/focus-first-agent/)（GitHub Pages，源文件 `docs/index.html`，Markdown 版 `docs/ARTICLE.md`）可分享的页面：https://claude.ai/code/artifact/3618782c-3b93-4014-b88f-22361b492531
 
 当前版本 **v0.2**（2026-09-03）：两轮共八路调研后的设计。
 
