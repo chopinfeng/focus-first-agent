@@ -52,7 +52,7 @@ npm start
 | `LLM_FALLBACKS` | `1` | Anthropic 上启用服务端 refusal fallback（`fallbacks: "default"`）；接口报 400 时设为 `0` |
 | `PORT` | `8765` | 服务端口 |
 | `SIM_SCALE` | `2` | 1 个"模拟分钟" = 多少真实秒。Advisory 的超时默认、断点日程都按模拟分钟算 |
-| `TASKS` | `greet,cleanup,docs` | 启动哪些任务（逗号分隔） |
+| `TASKS` | `greet,cleanup,docs` | 启动哪些任务（逗号分隔）。可选：`greet,cleanup,docs,validate,rename,bugfix` |
 | `AUTO_START` | `1` | 服务启动即开跑；设 0 则在页面按"播放"再开始 |
 
 ## 它真实做了什么
