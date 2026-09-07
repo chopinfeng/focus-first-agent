@@ -33,6 +33,9 @@ export async function runAgent({ task, dir, kernel, provider, log }) {
   kernel.addAgent({ id: task.id, name: agent, state: "working" });
   const safe = (p) => { const abs = path.resolve(dir, p || "."); if (!abs.startsWith(path.resolve(dir))) throw new Error("path escapes sandbox"); return abs; };
   let finished = null, turns = 0, archLevel = false;
+  const snapshots = new Map();
+  const listFiles = (d) => { const out = []; (function walk(p, rel) { for (const e of fs.readdirSync(p, { withFileTypes: true })) { if (e.name === "node_modules" || e.name === ".git") continue; const r2 = rel ? rel + "/" + e.name : e.name; if (e.isDirectory()) walk(path.join(p, e.name), r2); else out.push(r2); } })(d, ""); return out; };
+  const snapshotFiles = (d) => new Map(listFiles(d).map((p) => [p, fs.readFileSync(path.join(d, p))]));
 
   async function execTool(name, args) {
     const c = kernel.classify(task, name, args);
@@ -45,7 +48,16 @@ export async function runAgent({ task, dir, kernel, provider, log }) {
         case "read_file": return fs.readFileSync(safe(args.path), "utf8").slice(0, 20000);
         case "write_file": { const p = safe(args.path); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, args.content); if (/package\.json$/.test(args.path)) archLevel = true; return `wrote ${args.path} (${args.content.length} chars)`; }
         case "delete_file": fs.rmSync(safe(args.path), { force: true }); return `deleted ${args.path}`;
-        case "run_command": return await sh(args.command, dir);
+        case "run_command": {
+          const before = snapshotFiles(dir); const out = await sh(args.command, dir); const after = new Set(listFiles(dir));
+          const removed = [...before.keys()].filter((p) => !after.has(p));
+          if (removed.length) {   // an allowlisted command deleted files: irreversible effect the tool name did not declare → surface it, keep a snapshot for undo
+            const key = "cmd.delete:" + Date.now(); snapshots.set(key, new Map(removed.map((p) => [p, before.get(p)])));
+            kernel.route({ agent, born: kernel.now(), kind: "ar", level: "advisory", urg: "soon", cls: "constraint", effect: "fs.delete.byCmd", key,
+              headline: `已放行的命令删除了 ${removed.length} 个文件（事后审计）`, ctx: { i_did: `命令：${args.command}`, i_need: `删除了 ${removed.slice(0, 4).join(", ")}${removed.length > 4 ? " …" : ""}；已存快照` },
+              opts: [{ l: "接受", rec: 1 }, { l: "从快照恢复" }], fallback: "接受", ttl: 20, applyAfter: 20 });
+          }
+          return out; }
         case "finish": finished = args; return "delivered";
         default: return "unknown tool";
       }
@@ -64,7 +76,10 @@ export async function runAgent({ task, dir, kernel, provider, log }) {
   const origClassify = kernel.classify;
   const classifyWithApprovals = (t, name, args) => { const c = origClassify(t, name, args); const key = name + ":" + (args.path || args.command || ""); if (c.kind === "ar" && approved.has(key)) return { ...c, kind: "act", label: `（已批准）${name} ${args.path || args.command}`, key }; return c; };
   kernel.classify = classifyWithApprovals;
-  kernel.ev.on("change", () => { for (const [id, k] of Object.entries(kernel.S.answered)) { const ar = kernel.S.inbox.find((x) => x.id === id); if (ar && ar.agent === agent && ar.key && k === 0 && ["fs.delete", "fs.write.out", "proc.exec.other"].includes(ar.effect)) approved.add(ar.key); } });
+  const restored = new Set();
+  kernel.ev.on("change", () => { for (const [id, k] of Object.entries(kernel.S.answered)) { const ar = kernel.S.inbox.find((x) => x.id === id) || kernel.S.decided.find((d) => d.ar.id === id)?.ar; if (!ar || ar.agent !== agent || !ar.key) continue;
+    if (k === 0 && ["fs.delete", "fs.write.out", "proc.exec.other"].includes(ar.effect)) approved.add(ar.key);
+    if (k === 1 && ar.effect === "fs.delete.byCmd" && snapshots.has(ar.key) && !restored.has(ar.key)) { restored.add(ar.key); for (const [p, buf] of snapshots.get(ar.key)) { const abs = path.join(dir, p); fs.mkdirSync(path.dirname(abs), { recursive: true }); fs.writeFileSync(abs, buf); } log(`[${agent}] restored ${snapshots.get(ar.key).size} files from snapshot`); } } });
 
   const messages = [{ role: "user", content: `开始任务。先 list_files 和 read README.md。` }];
   while (turns++ < 40 && !finished) {
@@ -88,9 +103,9 @@ export async function runAgent({ task, dir, kernel, provider, log }) {
   }
   if (!finished) { kernel.setAgent(task.id, { state: "stopped" }); return; }
   // independent verification before the evidence packet reaches the human
-  let verification = finished.verification;
-  if (task.verify) { const out = await sh(task.verify, dir); const ok = !/fail|error|not ok/i.test(out) || /pass \d+[\s\S]*fail 0/i.test(out); verification = (ok ? "verifier 通过：" : "verifier 失败：") + task.verify + "\n" + out.slice(-400); }
-  kernel.deliverEvidence(task, { ...finished, verification }, archLevel);
+  let verification = finished.verification, verified = true;
+  if (task.verify) { const out = await sh(task.verify, dir); verified = /\[exit 0\]\s*$/.test(out); verification = (verified ? "verifier 通过：" : "verifier 失败：") + task.verify + "\n" + out.slice(-400); }
+  kernel.deliverEvidence(task, { ...finished, verification }, archLevel, verified);
   kernel.setAgent(task.id, { state: "done" });
 }
 
@@ -106,10 +121,14 @@ export async function makeProvider({ provider = "anthropic", model, baseUrl, api
     const { default: Anthropic } = await import("@anthropic-ai/sdk");
     const client = new Anthropic();
     const tools = TOOL_DEFS.map((t) => ({ name: t.name, description: t.description, input_schema: t.schema }));
+    // Anthropic-compatible gateways (BigModel/GLM, Kimi, MiniMax…) via ANTHROPIC_BASE_URL: no adaptive-thinking param, no beta fallbacks
+    const compat = provider === "anthropic-compat" || (process.env.ANTHROPIC_BASE_URL && !/api\.anthropic\.com/.test(process.env.ANTHROPIC_BASE_URL));
     return {
       async call({ system, messages }) {
-        const params = { model, max_tokens: 16000, thinking: { type: "adaptive" }, system, tools, messages };
-        const resp = fallbacks
+        const params = compat
+          ? { model, max_tokens: 8000, system, tools, messages }
+          : { model, max_tokens: 16000, thinking: { type: "adaptive" }, system, tools, messages };
+        const resp = fallbacks && !compat
           ? await client.beta.messages.create({ ...params, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" })
           : await client.messages.create(params);
         if (resp.stop_reason === "refusal") return { assistant: { role: "assistant", content: resp.content }, text: "(refusal)", toolCalls: [] };
@@ -147,7 +166,7 @@ function makeMockProvider() {
       [{ name: "write_file", input: { path: "src/greet.js", content: "const T={en:(n)=>`Hello, ${n}!`,zh:(n)=>`你好，${n}！`,ja:(n)=>`こんにちは、${n}さん！`};\nexport function greet(name, lang='en'){ return (T[lang]||T.en)(name); }\n" } },
        { name: "write_file", input: { path: "test/greet.test.js", content: "import test from 'node:test';import assert from 'node:assert/strict';import { greet } from '../src/greet.js';\ntest('en', () => assert.equal(greet('Ada'), 'Hello, Ada!'));\ntest('zh', () => assert.equal(greet('Ada','zh'), '你好，Ada！'));\ntest('ja', () => assert.equal(greet('Ada','ja'), 'こんにちは、Adaさん！'));\n" } },
        { name: "run_command", input: { command: "npm test" } }],
-      [{ name: "write_file", input: { path: "package.json", content: "{\"name\":\"greet\",\"version\":\"1.0.1\",\"private\":true,\"type\":\"module\",\"scripts\":{\"test\":\"node --test test/\"}}\n" } }],
+      [{ name: "write_file", input: { path: "package.json", content: "{\"name\":\"greet\",\"version\":\"1.0.1\",\"private\":true,\"type\":\"module\",\"scripts\":{\"test\":\"node --test\"}}\n" } }],
       [],
       [{ name: "finish", input: { summary: "greet 支持 en/zh/ja，默认 en，兼容旧调用；未改 package.json。", verification: "npm test 3/3", assumptions: ["语言代码用短代码 zh"], what_would_prove_me_wrong: "若产品要求按浏览器语言" } }],
     ],
@@ -180,7 +199,7 @@ function makeMockProvider() {
       const retries = [];
       if (txt.includes("人的决定已到")) {
         for (const m of txt.matchAll(/要删除 (\S+)，不可逆 → 删除/g)) retries.push({ name: "delete_file", input: { path: m[1], reason: "已批准" } });
-        for (const m of txt.matchAll(/要写入 scope 外的 (\S+) → 允许/g)) retries.push({ name: "write_file", input: { path: m[1], content: JSON.stringify({ name: id, version: "1.0.1", private: true, type: "module", scripts: { test: "node --test test/" } }, null, 2) + "\n" } });
+        for (const m of txt.matchAll(/要写入 scope 外的 (\S+) → 允许/g)) retries.push({ name: "write_file", input: { path: m[1], content: JSON.stringify({ name: id, version: "1.0.1", private: true, type: "module", scripts: { test: "node --test" } }, null, 2) + "\n" } });
       }
       const step = retries.length ? retries : (scripts[id][i] || null); if (step && !retries.length) cursor[id] = i + 1;
       const toolCalls = (step || []).map((t, k) => ({ id: `${id}_${i}_${k}_${retries.length ? "r" : ""}`, name: t.name, input: t.input }));

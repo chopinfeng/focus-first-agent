@@ -136,6 +136,7 @@ export function createKernel({ scale = 2 } = {}) {
   }
   function tick() {
     const m = now(), st = hs(m);
+    S.pending = S.pending.filter((ar) => S.answered[ar.id] === undefined);   // answered while delivered: drop before timeouts
     if (st === "BREAKPOINT") { const keep = []; for (const ar of S.pending) { if (ar.delivered !== undefined) { keep.push(ar); continue; } if (ar.level === "caution" || (ar.level === "advisory" && !ar.applyAfter)) deliver(ar, m, false); else { deliver(ar, m, false); keep.push(ar); } } S.pending = keep; }
     const keep = [];
     for (const ar of S.pending) {
@@ -164,13 +165,15 @@ export function createKernel({ scale = 2 } = {}) {
     waitAny(agent) { return new Promise((res) => { const w = waiters.get(agent) || []; w.push(res); waiters.set(agent, w); }); },
     addAgent(a) { S.agents.push(a); changed(); },
     setAgent(id, patch) { const a = S.agents.find((x) => x.id === id); if (a) Object.assign(a, patch); changed(); },
-    deliverEvidence(task, packet, archLevel) {
-      const ar = mkAR({ agent: task.agent, level: archLevel ? "caution" : "advisory", urg: "soon", cls: "constraint",
-        headline: `${task.agent} 完成：${packet.summary?.slice(0, 80) || task.goal}`,
-        ctx: { i_did: `验证：${packet.verification}${packet.assumptions?.length ? `；假设 ${packet.assumptions.length} 条` : ""}`, i_need: archLevel ? "含架构级变更（依赖/公共接口），需要你的理解签字后合并" : "看一眼意图差异，或让它自动合并" },
-        opts: [{ l: archLevel ? "合并（我理解这些变更）" : "自动合并", rec: 1 }, { l: "退回修改" }, { l: "稍后" }], fallback: archLevel ? "不合并" : "自动合并", ttl: 600, applyAfter: archLevel ? undefined : 30, evidence: packet });
+    deliverEvidence(task, packet, archLevel, verified = true) {
+      const needsHuman = archLevel || !verified;
+      const ar = mkAR({ agent: task.agent, level: needsHuman ? "caution" : "advisory", urg: "soon", cls: "constraint",
+        headline: `${verified ? "" : "verifier 失败 · "}${task.agent} 完成：${packet.summary?.slice(0, 80) || task.goal}`,
+        ctx: { i_did: `验证：${String(packet.verification).slice(0, 160)}${packet.assumptions?.length ? `；假设 ${packet.assumptions.length} 条` : ""}`, i_need: !verified ? "独立验证未通过，Agent 自称完成；退回或亲自看" : archLevel ? "含架构级变更（依赖/公共接口），需要你的理解签字后合并" : "看一眼意图差异，或让它自动合并" },
+        opts: !verified ? [{ l: "退回修改", rec: 1 }, { l: "仍然合并" }, { l: "稍后" }] : [{ l: archLevel ? "合并（我理解这些变更）" : "自动合并", rec: 1 }, { l: "退回修改" }, { l: "稍后" }],
+        fallback: needsHuman ? "不合并" : "自动合并", ttl: 600, applyAfter: needsHuman ? undefined : 30, evidence: packet });
       const m = now(); cost("base", m, hs(m));
-      if (hs(m) === "BREAKPOINT") deliver(ar, m, false); else { S.pending.push(ar); log(m, task.agent, ar.headline, [["defer", archLevel ? "Caution · 等断点" : "Advisory · 等断点或 30 分钟后自动合并"]]); }
+      if (hs(m) === "BREAKPOINT") deliver(ar, m, false); else { S.pending.push(ar); log(m, task.agent, ar.headline, [["defer", needsHuman ? "Caution · 等断点" : "Advisory · 等断点或 30 分钟后自动合并"]]); }
       changed(); return ar; },
     stop() { clearInterval(timer); },
   };

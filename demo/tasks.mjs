@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const PKG = (name) => JSON.stringify({ name, version: "1.0.0", private: true, type: "module", scripts: { test: "node --test test/" } }, null, 2) + "\n";
+const PKG = (name) => JSON.stringify({ name, version: "1.0.0", private: true, type: "module", scripts: { test: "node --test" } }, null, 2) + "\n";
 
 export const TASKS = {
   greet: {
