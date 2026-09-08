@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>测试方案 · Focus-First Agent</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--ground:#F5F6F4;--surface:#FFFFFF;--sunken:#EAEEEC;--ink:#1B2421;--muted:#62706B;--line:#D7DDDA;--amber:#C4700F;--amber-soft:#F6E5CF;--done:#2F7A4E}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ground:#101715;--surface:#182120;--sunken:#141C1A;--ink:#E4EBE8;--muted:#93A39E;--line:#2A3634;--amber:#E39A3F;--amber-soft:#3A2A14;--done:#6CC08B}}
+*{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.8 "IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--amber);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--amber) 40%,transparent)}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 20px 80px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;align-items:start}
+.side{position:sticky;top:20px;font-size:13px;line-height:1.5}.side .eyebrow{font:700 11px/1 "Manrope",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.side ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}.side a{display:block;padding:5px 0 5px 14px;color:var(--muted);border:0;margin-left:-1px;border-left:2px solid transparent}.side a.on{color:var(--ink);border-left-color:var(--amber)}
+main{max-width:78ch;min-width:0}
+h1{font:800 32px/1.2 "Manrope","PingFang SC",sans-serif;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}h2{font:700 22px/1.3 "Manrope","PingFang SC",sans-serif;margin:48px 0 12px;padding-top:20px;border-top:1px solid var(--line)}h3{font:700 17px/1.35 "Manrope","PingFang SC",sans-serif;margin:28px 0 8px}h4{font:600 15px/1.4 "Manrope","PingFang SC",sans-serif;margin:18px 0 6px}
+p{margin:10px 0}blockquote{margin:16px 0;padding:10px 16px;border-left:3px solid var(--amber);background:var(--amber-soft);color:var(--ink)}
+code{font:.88em "IBM Plex Mono",Menlo,monospace;background:var(--sunken);padding:1px 5px;border-radius:3px}pre{font:12.5px/1.6 "IBM Plex Mono",Menlo,monospace;background:var(--sunken);border:1px solid var(--line);border-radius:4px;padding:14px 16px;overflow:auto}pre code{background:none;padding:0}
+.tbl{overflow-x:auto;margin:12px 0}table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.5}th{font:500 12px/1.4 "IBM Plex Mono",monospace;color:var(--muted);text-align:left;padding:8px 10px 8px 0;border-bottom:2px solid var(--line)}td{padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px;display:block;margin:14px 0}hr{border:0;border-top:1px solid var(--line);margin:36px 0}
+.meta{font:12px/1.5 "IBM Plex Mono",monospace;color:var(--muted);margin-bottom:22px}
+@media (max-width:860px){.wrap{grid-template-columns:1fr;gap:16px}.side{position:static}.side ol{display:flex;flex-wrap:wrap;border:0;gap:4px 12px}.side a{padding:3px 0;border:0}}
+</style>
+</head>
+<body>
+<nav class="site-nav" aria-label="站点"><a class="site-brand" href="index.html"><i></i>Focus-First Agent</a><div class="site-links"><a href="index.html">首页</a><a href="article.html">文章</a><a href="design.html">设计参考</a><a href="docs.html" class=on>文档</a><a href="inbox.html">收件箱原型</a><a href="demo.html">动态演示</a><a href="playground.html">Playground</a><a href="runs.html">运行报告</a><a href="https://github.com/chopinfeng/focus-first-agent" target=_blank rel=noopener>GitHub</a></div></nav>
+<style>.site-nav{display:flex;align-items:center;gap:18px;padding:0 20px;height:42px;background:var(--surface,#fff);border-bottom:1px solid var(--line,#d7ddda);font:13px/1 "IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;position:relative;z-index:50}
+.site-brand{display:inline-flex;align-items:center;gap:8px;font-family:"Manrope","PingFang SC",sans-serif;font-weight:800;font-size:13px;color:var(--ink,#1b2421);text-decoration:none;border:0;white-space:nowrap}
+.site-brand i{width:8px;height:8px;border-radius:50%;background:var(--amber,var(--needs,#c4700f));display:inline-block}
+.site-links{display:flex;gap:2px;margin-left:auto;overflow-x:auto}
+.site-links a{padding:6px 9px;border-radius:4px;color:var(--muted,#62706b);text-decoration:none;border:0;white-space:nowrap}
+.site-links a:hover{color:var(--ink,#1b2421)}.site-links a.on{background:var(--sunken,#eaeeec);color:var(--ink,#1b2421);font-weight:500}
+@media (max-width:640px){.site-nav{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}.site-links{margin-left:0}}</style>
+
+<div class="wrap"><aside class="side"><div class="eyebrow">文档</div><ol><li><a href="doc-DESIGN.html">设计 v0.2</a></li><li><a href="doc-RESEARCH.html">调研综合</a></li><li><a href="doc-CHANGELOG-v0.2.html">v0.1 → v0.2 决策</a></li><li><a href="doc-USE-CASES.html">Use case</a></li><li><a href="doc-UI-UX.html">界面规范</a></li><li><a href="doc-TESTING.html" class=on>测试方案</a></li><li><a href="doc-BENCHMARK.html">AttentionBench</a></li><li><a href="doc-EXPERIMENTS.html">实验设计</a></li></ol><div class="eyebrow" style="margin-top:18px">原始调研</div><ol><li><a href="doc-01-hci-interruption-science.html">hci interruption science</a></li><li><a href="doc-02-agent-products.html">agent products</a></li><li><a href="doc-03-hitl-frameworks-protocols.html">hitl frameworks protocols</a></li><li><a href="doc-04-multi-agent-ambient.html">multi agent ambient</a></li><li><a href="doc-05-cross-domain-alerting.html">cross domain alerting</a></li><li><a href="doc-06-opinions-hai-guidelines.html">opinions hai guidelines</a></li><li><a href="doc-07-benchmarks-user-simulators.html">benchmarks user simulators</a></li><li><a href="doc-08-products-round2.html">products round2</a></li></ol></aside><main><div class="meta">源文件 docs/TESTING.md</div><h1 id="FFA-测试方案">FFA 测试方案</h1>
+<blockquote>版本 0.2，2026-09-03（v0.2 新增：准入门槛、三级告警、速率/flood/抑制召回/chattering、效果分类、账本 v0.2、模拟器验证）。目标：让"注意力行为"和"安全不变量"像功能正确性一样可回归。测试分四层，核心是第三层的 <strong>模拟人类回放</strong>。</blockquote>
+<h2 id="0-原则">0. 原则</h2>
+<ol><li><strong>注意力行为必须确定性可测</strong>：内核的所有时间依赖（断点、TTL、合并窗口、利用率）通过注入的虚拟时钟驱动，测试不 sleep。</li><li><strong>人是被模拟的</strong>：场景测试里的人由 <code>SimulatedHuman</code> 扮演，它有状态时间线和回答策略，见 <code>docs/BENCHMARK.md</code> 第 3 节。</li><li><strong>安全不变量用属性测试</strong>：随机生成事件流，断言 P0 永不自动放行等性质在任何序列下成立。</li><li><strong>每个 use case 至少一个场景测试</strong>，<code>USE-CASES.md</code> 的验收条款逐条对应断言。</li></ol>
+<h2 id="1-测试金字塔">1. 测试金字塔</h2>
+<pre><code>          ┌──────────────────────────┐
+          │  L4 真人评估（小样本）     │  每阶段末，8–12 人
+          ├──────────────────────────┤
+          │  L3 场景回放 + 属性测试    │  CI 必跑，覆盖 UC-01…15
+          ├──────────────────────────┤
+          │  L2 适配器集成            │  用录制的 SDK 事件 fixture
+          ├──────────────────────────┤
+          │  L1 内核单元              │  表驱动
+          └──────────────────────────┘</code></pre>
+<h2 id="2-L1-内核单元测试">2. L1 内核单元测试</h2>
+<h3 id="2-1-AR-schema">2.1 AR schema</h3>
+<ul><li>必填字段缺失 → 拒绝（headline、kind、risk、task_id）。</li><li><code>headline</code> &gt; 120 字符 → 拒绝。</li><li><code>kind=approval</code> 且 <code>risk.level=P0</code> 且带 <code>default</code> → 拒绝（P0 不允许默认放行）。</li><li><code>on_expire=apply_default</code> 但无 <code>default</code> → 拒绝。</li><li><code>ttl</code>、<code>apply_after</code>、<code>confirm_delay</code>、<code>time_to_irreversible</code> 为合法 ISO 8601 duration。</li><li><strong>准入门槛</strong>：<code>required_action</code>、<code>consequence_if_ignored</code>、<code>time_to_irreversible</code> 缺任一项 → 校验通过但 <code>admissible=false</code>，只能进 digest。</li><li><code>on_expire</code> 必须是枚举之一；<code>risk.level=P0</code> 且 <code>on_expire ∈ {apply_default, skip_and_continue}</code> → 拒绝。</li><li><code>decision_class ∈ {goal, input, constraint, taste}</code> 必填；<code>goal/taste</code> 且带 <code>default</code> → 拒绝。</li><li><code>supersedes_id</code> 指向的 AR 必须存在且未终态。</li></ul>
+<h3 id="2-2-Policy-决策表-表驱动-">2.2 Policy 决策表（表驱动）</h3>
+<p>输入：<code>(risk.level, reversible, scope_in, external_side_effect, trust_state, confidence, human_state)</code> → 期望：<code>ACT | ACT+NOTIFY | ASK_DEFER | ASK_NOW | BLOCK</code>。至少覆盖：</p>
+<div class=tbl><table><tr><th>level</th><th>reversible</th><th>scope_in</th><th>trust</th><th>期望</th></tr><tr><td>P3</td><td>true</td><td>true</td><td>any</td><td>ACT</td></tr><tr><td>P2</td><td>true</td><td>true</td><td>ask</td><td>ACT（可逆优先）</td></tr><tr><td>P2</td><td>true</td><td>false</td><td>ask</td><td>ACT+NOTIFY</td></tr><tr><td>P1</td><td>false</td><td>true</td><td>ask</td><td>ASK_DEFER</td></tr><tr><td>P1</td><td>false</td><td>true</td><td>auto_allow</td><td>ACT（账本放行）</td></tr><tr><td>P1</td><td>false</td><td>false</td><td>any</td><td>ASK_NOW</td></tr><tr><td>P0</td><td>any</td><td>any</td><td>auto_allow</td><td>ASK_NOW（账本被硬规则覆盖）</td></tr><tr><td>any</td><td>any</td><td>any</td><td>deny</td><td>BLOCK</td></tr><tr><td>P3</td><td>true</td><td>true</td><td>any, decision_class=taste</td><td>ASK（Caution，三轴覆盖矩阵）</td></tr><tr><td>P2</td><td>true</td><td>true</td><td>any, decision_class=goal</td><td>ASK（Caution）+ spec_gap 计数</td></tr><tr><td>P1</td><td>false</td><td>true</td><td>auto_allow, confidence=0.99</td><td>ACT（confidence 不影响 ask/act）</td></tr></table></div>
+<p>输出除决策外还断言告警级别与自治模式：<code>(P0, now) → Warning/consent</code>；<code>(P1, now) → Caution/consent</code>；<code>(P2, reversible, whenever) → Advisory/exception</code>。</p>
+<h3 id="2-2b-效果分类-动作类-">2.2b 效果分类（动作类）</h3>
+<ul><li><code>rm -rf x &amp;&amp; git push --force</code> → 合成一个动作，effects = {fs.delete, git.push}，取最高风险。</li><li><code>echo … | base64 -d | sh</code>、<code>bash -c "$(cat run.sh)"</code> → 归为 <code>proc.exec:opaque</code>，默认 ask，不依赖字符串。</li><li>MCP tool <code>destructiveHint=true</code> → <code>reversible=false</code>；<code>readOnlyHint=true</code> → P3。</li><li>相同命令不同目标路径（<code>src/<strong></code> vs <code>infra/</strong></code>）→ 不同动作类。</li></ul>
+<p>评估顺序测试：硬 deny 覆盖账本；硬 ask 覆盖账本；账本覆盖效用；效用覆盖默认。</p>
+<h3 id="2-3-效用计算">2.3 效用计算</h3>
+<ul><li>固定 <code>P(need)</code>、<code>Cost(wrong)</code>，改变 <code>human_state</code>：FOCUS 下 defer，BREAKPOINT 下 surface。</li><li><code>Cost(interrupt|FOCUS)</code> 参数可配置，默认 12 分钟；断言阈值处的边界行为。</li></ul>
+<h3 id="2-4-Scheduler">2.4 Scheduler</h3>
+<ul><li><strong>断点延迟</strong>：AR(urgency=soon) 在 FOCUS 到达 → 队列；注入 <code>breakpoint(commit)</code> 事件 → ≤ 1 tick 投递。</li><li><strong>合并</strong>：同 <code>batch_key</code> 在 2 秒窗口内 N 条 → 1 个 AR，<code>children.length == N</code>；窗口外 → 新 AR。</li><li><strong>静默</strong>：<code>focus(45m)</code> 期间只投递 P0/P1 now。</li><li><strong>渠道选择</strong>：状态 × urgency → 渠道，表驱动。</li><li><strong>升级阶梯</strong>：AR 在渠道 k 等待超过 <code>wait_k</code> → 渠道 k+1；已 resolved 的不升级。</li><li><strong>TTL</strong>：到期执行 <code>on_expire</code> 三种分支；到期后收件箱不再含该项。</li><li><strong>并发闸门</strong>：利用率 &gt; 70% 暂停派发，&lt; 60% 恢复（滞回）；待处理线程 &gt; 4 暂停派发。</li><li><strong>确认延迟</strong>：AR 在 <code>confirm_delay</code> 内收到 <code>resolved_by_agent</code> → 撤回，不投递、不计预算。</li><li><strong>断点三粒度</strong>：Advisory 在 fine 断点不投递、coarse 投递；Caution-soon 在 medium 投递。</li><li><strong>Flood</strong>：10 分钟内第 10 条 → 折叠；期间 Warning 单独投递；窗口新增 &lt; 5 退出；退出后仍有效的 AR 重新投递。</li><li><strong>Standing 上限</strong>：未处理 = 10 时新 Advisory 只进 digest。</li><li><strong>抑制与召回</strong>：focus 期间 Advisory/Caution-soon 进入 suppressed 集合而非 digest；退出后 ≤ 10 秒重现；过期的按 <code>on_expire</code>；白名单项不抑制；Warning 不抑制。</li><li><strong>Chattering</strong>：同 (batch_key, effects) 24h 第 3 次 → 不生成第 3 条，生成"修规则"AR；第 4 次仍不生成。</li><li><strong>Cooldown</strong>：同 agent 同 risk 无 key 的 AR 在 5 分钟内合并。</li><li><strong>静默过久</strong>：auto_allow 动作无输出 5 分钟 → Advisory；受 chattering 约束不重复。</li><li><strong>Ack / snooze</strong>：ack 后升级阶梯停止；snooze 后同 key 新 Warning 仍投递。</li></ul>
+<h3 id="2-5-Budget">2.5 Budget</h3>
+<ul><li>任务预算 2：第 3 个 question 降级为 assumption 并进 digest。</li><li>日预算 5：第 6 个非 now 上浮进 digest。</li><li>P0/P1 now 不消耗也不受预算限制。</li><li><strong>速率预算</strong>：10 分钟窗口第 2 条 Advisory → digest；1 小时窗口第 7 条 → digest；软阈 80% 时 Advisory 降级、硬阈 100% 时只放行 Warning/Caution；双窗口任一触发即生效。</li></ul>
+<h3 id="2-6-Trust-ledger-状态机">2.6 Trust ledger 状态机</h3>
+<ul><li>10 次 approve、0 undo → <code>auto_allow</code>；第 10 次前任何 reject/undo → 计数清零。</li><li>P0 类：任何序列都不可达 <code>auto_allow</code>（属性测试）。</li><li><code>reset</code> 把所有类回到 <code>ask</code>。</li><li><strong>证据计数</strong>：10 次 approve 但 0 次 verifier 通过 → 不晋升；10 次 verifier 通过 + 可撤销 + 未 undo → 晋升候选。</li><li><strong>不对称</strong>：晋升后 1 次 undo/override/verifier 失败 → 降两级并重置。</li><li><strong>双向监测</strong>：晋升后该类打断率或回滚率高于晋升前基线 → 自动降级并生成通知。</li><li><strong>晋升通知</strong>：晋升生成 Advisory；撤回后立即回到 ask。</li><li><strong>拒绝原因</strong>：reject 无原因 → 拒绝提交；原因写入规则表。</li><li><strong>治理</strong>：阈值修改无 <code>actor</code> 字段 → 拒绝；<code>actor</code> 为 agent → 拒绝。</li><li><strong>反橡皮章</strong>：停留 &lt; 3s 计入 rubber_stamp；5% Caution 标 deep_review，未展开 proof 不能批准；退化信号（任一）→ 生成审计 AR，且该 AR 不可抑制。</li></ul>
+<h3 id="2-7-HumanState">2.7 HumanState</h3>
+<ul><li>输入信号序列（键鼠活跃、前台应用、日历、显式 focus）→ 状态转移；断言迟滞（不在 FOCUS/IDLE 间抖动）。</li><li>断点识别：commit、测试结束、窗口失焦 ≥ 30 秒、打开收件箱。</li></ul>
+<h2 id="3-L2-适配器集成测试">3. L2 适配器集成测试</h2>
+<p>用录制的真实 SDK 事件作为 fixture（JSON），断言"事件 → AR → 决议 → 运行时调用"往返。</p>
+<div class=tbl><table><tr><th>适配器</th><th>Fixture</th><th>断言</th></tr><tr><td>Claude Code hooks</td><td><code>PreToolUse(Bash rm)</code>, <code>PermissionRequest(Write)</code>, <code>Notification(idle_prompt)</code>, <code>Stop</code></td><td>AR 字段完整；决议输出合法 hook JSON（<code>permissionDecision</code>、追加规则）</td></tr><tr><td>Claude Agent SDK</td><td><code>canUseTool</code> 调用</td><td>返回 allow/deny + <code>updatedInput</code></td></tr><tr><td>LangGraph</td><td><code>HITLRequest{action_requests, review_configs}</code></td><td><code>allowed_decisions</code> 映射到 options；决议生成 <code>Command(resume={decisions:[…]})</code></td></tr><tr><td>OpenAI Agents SDK</td><td><code>RunResult.interruptions</code> 序列化</td><td><code>RunState.approve/reject</code> 调用正确的 item</td></tr><tr><td>MCP</td><td><code>elicitation</code> form 请求；tool 带 <code>destructiveHint</code></td><td>form → options；<code>destructiveHint=true</code> → <code>reversible=false</code></td></tr><tr><td>A2A</td><td>task <code>input-required</code></td><td>question AR；决议追加 message</td></tr></table></div>
+<p>持久化：内核重启后未决 AR 及其 TTL 计时恢复（写入 SQLite，重启回放）。</p>
+<h2 id="4-L3-场景回放与属性测试">4. L3 场景回放与属性测试</h2>
+<h3 id="4-1-Trace-格式">4.1 Trace 格式</h3>
+<p>一次场景 = 三条时间线的合并，全部用虚拟时钟：</p>
+<pre><code>trace: uc-02-irreversible-in-focus
+clock: virtual
+agent_events:                       # 来自运行时或录制
+  - t: 0s    kind: tool_call  tool: Bash  cmd: &quot;rm db/migrations/2023_*.sql&quot;  meta: {destructive: true}
+  - t: 1s    kind: tool_call  tool: Write path: src/auth/token.ts
+human_timeline:                     # 模拟人类状态
+  - t: 0s    state: FOCUS
+  - t: 8m    event: test_finished   # 断点
+  - t: 8m5s  state: BREAKPOINT
+human_policy: default_dev           # 回答策略，见 BENCHMARK.md
+expect:
+  inbox_additions_during: {from: 0s, to: 8m, count: 0}
+  delivered_within: {after_event: test_finished, seconds: 5}
+  agent_tool_calls_while_pending: &quot;&gt;0&quot;
+  terminal_state: acted</code></pre>
+<h3 id="4-2-场景清单">4.2 场景清单</h3>
+<p><code>USE-CASES.md</code> 的 15 个 use case 各一条主流程 trace，加分支：</p>
+<ul><li>UC-02a（30 分钟持续 FOCUS → apply_after 生效）、UC-02b（TTL 到期）</li><li>UC-05 × 3（预算耗尽 / focus 中 / AWAY 时 P0 仍穿透）</li><li>UC-08 × 3（P3 自动合并 / P1 进收件箱 / P0 now）</li><li>UC-10（3 轮失败后 escalation）</li><li>UC-04a（goal/taste 类不允许 Advisory）</li><li>UC-09 × 3（证据不足不晋升 / undo 降级 / 双向监测降级）</li><li>UC-12（抑制召回 + 白名单 + 过期）</li><li>UC-16 / 17 / 18 / 19 / 20 各一条</li></ul>
+<h3 id="4-3-属性测试-随机事件流-">4.3 属性测试（随机事件流）</h3>
+<p>生成器：随机 AR 序列（kind、risk、reversible、urgency、batch_key、ttl）× 随机人类状态时间线 × 随机回答策略。对每条随机 trace 断言：</p>
+<div class=tbl><table><tr><th>不变量</th><th>断言</th></tr><tr><td>INV-1 P0 不自动放行</td><td>任何 P0 AR 的终态 ∈ {acted, rejected, blocked}，从不 <code>auto_applied</code></td></tr><tr><td>INV-2 不无限等待</td><td>每个 AR 在 <code>ttl</code> 内到达终态</td></tr><tr><td>INV-3 终态唯一</td><td>每个 AR 恰好一个终态事件</td></tr><tr><td>INV-4 FOCUS 静默</td><td>FOCUS 期间投递的 AR 满足 <code>urgency=now ∧ level≤P1</code></td></tr><tr><td>INV-5 预算上界</td><td>非 now 上浮数 ≤ 预算</td></tr><tr><td>INV-6 合并幂等</td><td>合并前后动作集合相同</td></tr><tr><td>INV-7 撤销可逆</td><td>ACT 且 reversible 的动作 undo 后状态等于回滚点</td></tr><tr><td>INV-8 账本单调</td><td>P0 类永不进入 auto_allow</td></tr><tr><td>INV-9 跨渠道一致</td><td>AR 在一处 resolved 后所有渠道状态一致</td></tr><tr><td>INV-10 不可逆不进 digest</td><td><code>reversible=false</code> 的 AR 终态从不为 <code>digested</code> 或 <code>auto_applied</code></td></tr><tr><td>INV-11 抑制必重现</td><td>被 suppressed 的 AR 在 focus 结束后要么投递、要么按 <code>on_expire</code> 终态，从不丢失</td></tr><tr><td>INV-12 P0 过期不放行</td><td>P0 的 <code>on_expire ∈ {escalate, end_task}</code> 且终态从不为 <code>auto_applied</code></td></tr><tr><td>INV-13 goal/taste 必问</td><td><code>decision_class ∈ {goal, taste}</code> 的 AR 从不进入"已替你决定"队列</td></tr><tr><td>INV-14 速率上界</td><td>任意 10 分钟窗口内投递到收件箱的 Advisory ≤ 1，任意 1 小时 ≤ 6（Warning/Caution 除外）</td></tr><tr><td>INV-15 flood 单条</td><td>flood 模式期间收件箱新增非 Warning 项 ≤ 1</td></tr><tr><td>INV-16 审计不可压</td><td>退化审计 AR 不受预算、抑制、flood 影响</td></tr><tr><td>INV-17 账本单向 P0</td><td>与 INV-8 合并：P0 与 <code>effects ∋ money/message.out</code> 永不 auto_allow</td></tr></table></div>
+<h3 id="4-4-Golden-文件">4.4 Golden 文件</h3>
+<ul><li>EvidencePacket 渲染（markdown / 终端 / 手机推送三种）。</li><li>Digest 渲染，断言 ≤ 25 行。</li><li>推送正文格式（headline + 默认项 + TTL + deep link）。</li><li>"已替你决定"队列渲染（每条含 <code>why_not_asked</code> 与 undo）。</li><li>自治面板（速率仪表、分布、已抑制计数）。</li></ul>
+<h2 id="5-L4-真人评估">5. L4 真人评估</h2>
+<p>每个阶段末做一次小样本被试内实验，与 benchmark 的真人协议共用（见 <code>BENCHMARK.md</code> 第 6 节）。CI 不跑。</p>
+<h3 id="5-1-SimulatedHuman-验证-v0-2-新增-借鉴-Collaborative-Gym-">5.1 SimulatedHuman 验证（v0.2 新增，借鉴 Collaborative Gym）</h3>
+<p>模拟人本身是被测对象。每次修改模拟人参数或策略后：</p>
+<ul><li>抽 100 条模拟轨迹由 2 名标注者评 accuracy / consistency / plausibility，目标各 ≥ 90%。</li><li>真人轨迹与模拟轨迹成对呈现，让第三人判断哪条是真人，目标区分准确率 ≤ 60%（接近随机）。</li><li>真人与模拟条件下的失败类型分布（Co-Gym 五类）Spearman 相关 ≥ 0.7。</li><li>未通过则 benchmark 结果标注"模拟器未验证"。</li></ul>
+<h2 id="6-覆盖率与门禁">6. 覆盖率与门禁</h2>
+<ul><li>L1 行覆盖 ≥ 90%，Policy 决策表分支覆盖 100%。</li><li>L3 所有 INV 在 1,000 条随机 trace 上通过才能合并。</li><li>任何改动使 <code>p0_auto_pass &gt; 0</code>、<code>INV-2</code>、<code>INV-10</code>、<code>INV-12</code>、<code>INV-13</code> 失败 → 阻断发布。</li><li><code>priority_distribution</code> 在 smoke 集上 Warning 占比 &gt; 10% → 警告（后果分析不足）。</li></ul>
+<h2 id="7-建议目录结构">7. 建议目录结构</h2>
+<pre><code>ffa/
+  kernel/         policy.py scheduler.py budget.py timeout.py ledger.py humanstate.py
+  schema/         attention_request.json evidence_packet.json task_card.json
+  adapters/       claude_code/ langgraph/ openai_agents/ mcp/ a2a/
+  surfaces/       inbox_cli/ digest/ channels/
+tests/
+  unit/           test_policy_table.py test_scheduler.py …
+  integration/    fixtures/&lt;adapter&gt;/*.json  test_&lt;adapter&gt;.py
+  scenarios/      traces/uc-01.yaml … uc-15b.yaml  test_replay.py
+  properties/     test_invariants.py
+  golden/         evidence_packet/*.md digest/*.txt
+bench/            见 BENCHMARK.md</code></pre></main></div>
+<script>(function(){var as=[...document.querySelectorAll('.side a[href^="#"]')];var hs=as.map(function(a){return document.getElementById(a.getAttribute('href').slice(1))});if(!('IntersectionObserver' in window))return;var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){var i=hs.indexOf(e.target);as.forEach(function(a,j){a.classList.toggle('on',j===i)})}})},{rootMargin:'-20% 0px -70% 0px'});hs.forEach(function(h){h&&io.observe(h)})})();</script>
+</body>
+</html>

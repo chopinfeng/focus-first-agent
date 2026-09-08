@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>设计 v0.2 · Focus-First Agent</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--ground:#F5F6F4;--surface:#FFFFFF;--sunken:#EAEEEC;--ink:#1B2421;--muted:#62706B;--line:#D7DDDA;--amber:#C4700F;--amber-soft:#F6E5CF;--done:#2F7A4E}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ground:#101715;--surface:#182120;--sunken:#141C1A;--ink:#E4EBE8;--muted:#93A39E;--line:#2A3634;--amber:#E39A3F;--amber-soft:#3A2A14;--done:#6CC08B}}
+*{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.8 "IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--amber);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--amber) 40%,transparent)}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 20px 80px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;align-items:start}
+.side{position:sticky;top:20px;font-size:13px;line-height:1.5}.side .eyebrow{font:700 11px/1 "Manrope",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.side ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}.side a{display:block;padding:5px 0 5px 14px;color:var(--muted);border:0;margin-left:-1px;border-left:2px solid transparent}.side a.on{color:var(--ink);border-left-color:var(--amber)}
+main{max-width:78ch;min-width:0}
+h1{font:800 32px/1.2 "Manrope","PingFang SC",sans-serif;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}h2{font:700 22px/1.3 "Manrope","PingFang SC",sans-serif;margin:48px 0 12px;padding-top:20px;border-top:1px solid var(--line)}h3{font:700 17px/1.35 "Manrope","PingFang SC",sans-serif;margin:28px 0 8px}h4{font:600 15px/1.4 "Manrope","PingFang SC",sans-serif;margin:18px 0 6px}
+p{margin:10px 0}blockquote{margin:16px 0;padding:10px 16px;border-left:3px solid var(--amber);background:var(--amber-soft);color:var(--ink)}
+code{font:.88em "IBM Plex Mono",Menlo,monospace;background:var(--sunken);padding:1px 5px;border-radius:3px}pre{font:12.5px/1.6 "IBM Plex Mono",Menlo,monospace;background:var(--sunken);border:1px solid var(--line);border-radius:4px;padding:14px 16px;overflow:auto}pre code{background:none;padding:0}
+.tbl{overflow-x:auto;margin:12px 0}table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.5}th{font:500 12px/1.4 "IBM Plex Mono",monospace;color:var(--muted);text-align:left;padding:8px 10px 8px 0;border-bottom:2px solid var(--line)}td{padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px;display:block;margin:14px 0}hr{border:0;border-top:1px solid var(--line);margin:36px 0}
+.meta{font:12px/1.5 "IBM Plex Mono",monospace;color:var(--muted);margin-bottom:22px}
+@media (max-width:860px){.wrap{grid-template-columns:1fr;gap:16px}.side{position:static}.side ol{display:flex;flex-wrap:wrap;border:0;gap:4px 12px}.side a{padding:3px 0;border:0}}
+</style>
+</head>
+<body>
+<nav class="site-nav" aria-label="站点"><a class="site-brand" href="index.html"><i></i>Focus-First Agent</a><div class="site-links"><a href="index.html">首页</a><a href="article.html">文章</a><a href="design.html">设计参考</a><a href="docs.html" class=on>文档</a><a href="inbox.html">收件箱原型</a><a href="demo.html">动态演示</a><a href="playground.html">Playground</a><a href="runs.html">运行报告</a><a href="https://github.com/chopinfeng/focus-first-agent" target=_blank rel=noopener>GitHub</a></div></nav>
+<style>.site-nav{display:flex;align-items:center;gap:18px;padding:0 20px;height:42px;background:var(--surface,#fff);border-bottom:1px solid var(--line,#d7ddda);font:13px/1 "IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;position:relative;z-index:50}
+.site-brand{display:inline-flex;align-items:center;gap:8px;font-family:"Manrope","PingFang SC",sans-serif;font-weight:800;font-size:13px;color:var(--ink,#1b2421);text-decoration:none;border:0;white-space:nowrap}
+.site-brand i{width:8px;height:8px;border-radius:50%;background:var(--amber,var(--needs,#c4700f));display:inline-block}
+.site-links{display:flex;gap:2px;margin-left:auto;overflow-x:auto}
+.site-links a{padding:6px 9px;border-radius:4px;color:var(--muted,#62706b);text-decoration:none;border:0;white-space:nowrap}
+.site-links a:hover{color:var(--ink,#1b2421)}.site-links a.on{background:var(--sunken,#eaeeec);color:var(--ink,#1b2421);font-weight:500}
+@media (max-width:640px){.site-nav{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}.site-links{margin-left:0}}</style>
+
+<div class="wrap"><aside class="side"><div class="eyebrow">文档</div><ol><li><a href="doc-DESIGN.html" class=on>设计 v0.2</a></li><li><a href="doc-RESEARCH.html">调研综合</a></li><li><a href="doc-CHANGELOG-v0.2.html">v0.1 → v0.2 决策</a></li><li><a href="doc-USE-CASES.html">Use case</a></li><li><a href="doc-UI-UX.html">界面规范</a></li><li><a href="doc-TESTING.html">测试方案</a></li><li><a href="doc-BENCHMARK.html">AttentionBench</a></li><li><a href="doc-EXPERIMENTS.html">实验设计</a></li></ol><div class="eyebrow" style="margin-top:18px">原始调研</div><ol><li><a href="doc-01-hci-interruption-science.html">hci interruption science</a></li><li><a href="doc-02-agent-products.html">agent products</a></li><li><a href="doc-03-hitl-frameworks-protocols.html">hitl frameworks protocols</a></li><li><a href="doc-04-multi-agent-ambient.html">multi agent ambient</a></li><li><a href="doc-05-cross-domain-alerting.html">cross domain alerting</a></li><li><a href="doc-06-opinions-hai-guidelines.html">opinions hai guidelines</a></li><li><a href="doc-07-benchmarks-user-simulators.html">benchmarks user simulators</a></li><li><a href="doc-08-products-round2.html">products round2</a></li></ol></aside><main><div class="meta">源文件 docs/DESIGN.md</div><h1 id="Focus-First-Agent-Framework-FFA-设计">Focus-First Agent Framework（FFA）设计</h1>
+<blockquote>把人的注意力当作最稀缺的调度资源。<strong>版本 0.2，2026-09-03。</strong> 相对 v0.1 的改动与证据见 <code>docs/CHANGELOG-v0.2.md</code>；调研依据见 <code>docs/RESEARCH.md</code> 与 <code>docs/research/</code>。</blockquote>
+<h2 id="0-核心命题">0. 核心命题</h2>
+<p>现有 Agent 框架优化 token、时延、正确率，人的注意力只是副作用。FFA 在 <strong>Agent 运行时</strong> 和 <strong>人</strong> 之间插入一个 <strong>注意力内核（Attention Kernel）</strong>：</p>
+<ul><li>所有"需要人"的事件，无论来自哪个 Agent 或 SDK，都先变成一个结构化的 <strong>Attention Request（AR）</strong>，且必须通过准入门槛；</li><li>内核用确定性策略决定 <strong>要不要、什么时候、经什么渠道、以什么形态</strong> 送到人面前，或者 <strong>不送</strong>（自主执行 + 事后可撤销，或 Advisory 级超时按默认执行）；</li><li>人只在一个 <strong>异常收件箱</strong> 里做决策，只看 <strong>证据包</strong> 不看 transcript；</li><li>每次交互都记账，用证据而非批准次数校准信任，并监测监督是否退化。</li></ul>
+<p>一句话：<strong>Agent 的断点不是人的断点；FFA 负责把两者对齐，并且像告警工程那样治理打断的速率与分布。</strong></p>
+<h2 id="1-设计目标-可度量-">1. 设计目标（可度量）</h2>
+<div class=tbl><table><tr><th>目标</th><th>指标</th><th>起点（调研）</th><th>目标值</th></tr><tr><td>少打断</td><td>每任务人工干预次数</td><td>5.4（Anthropic 内部）</td><td>≤ 2</td></tr><tr><td>打断有节奏</td><td>上浮速率</td><td>无上限</td><td>稳态 ≤ 1 / 10 min，≤ 6 / h</td></tr><tr><td>打断有意义</td><td>橡皮章率（&lt; 3 秒批准占比）</td><td>≈ 93% 一律批准</td><td>&lt; 50%（SRE signal-to-noise 线）</td></tr><tr><td>升级率合理</td><td>进入人工决策的动作占比</td><td>100% 或 0%</td><td>10–15%</td></tr><tr><td>分布健康</td><td>Warning / Caution / Advisory 占比</td><td>无</td><td>≈ 5 / 15 / 80</td></tr><tr><td>恢复快</td><td>每次请求交互时间 IT 中位数</td><td>需重建上下文</td><td>≤ 90 秒</td></tr><tr><td>人不过载</td><td>人的利用率；待处理线程数</td><td>未测</td><td>&lt; 70%；≤ 4</td></tr><tr><td>只审高风险</td><td>需人工 review 的交付占比</td><td>100%</td><td>≈ 20%</td></tr><tr><td>不失去理解</td><td>架构级变更"理解签字"覆盖率</td><td>0</td><td>100%</td></tr><tr><td>不漏危险</td><td>Warning 被自动放行的次数；陷阱阻止率</td><td>人漏 1/3</td><td>0；100%</td></tr></table></div>
+<h2 id="2-六个核心抽象">2. 六个核心抽象</h2>
+<pre><code>TaskCard ──▶ Agent Runtime ──▶ AttentionRequest ──▶ AttentionKernel ──▶ Surfaces ──▶ Human
+   ▲                                                    │  ▲                          │
+   │                                                    ▼  │                          │
+   └────────── EvidencePacket ◀──────────── AttentionLedger ◀── HumanStateModel ◀─────┘</code></pre>
+<h3 id="2-1-TaskCard-意图卡-">2.1 TaskCard（意图卡）</h3>
+<p>委派时一次性写清，把提问前置。Intake 阶段有强制的 plan/interview 门：所有 <strong>goal 类</strong> 决策必须在这里问完。</p>
+<pre><code>goal: &quot;把登录接口迁移到新的 auth 服务&quot;
+scope: { include: [&quot;src/auth/**&quot;], exclude: [&quot;infra/**&quot;] }
+constraints: [&quot;不改公共 API&quot;, &quot;PR ≤ 250 行，可拆多个&quot;]
+done_criteria: [&quot;pnpm test 全绿&quot;, &quot;新增集成测试覆盖 refresh token&quot;]
+risk_class: P2           # P0 不可逆/生产/资金  P1 外部副作用  P2 可逆代码改动  P3 只读
+attention_contract:
+  rate_limit: { per_10min: 1, per_hour: 6 }   # 本任务允许的 Advisory/Caution 上浮速率
+  deadline: &quot;2026-09-04T18:00+08:00&quot;
+  channels: [inbox, push]                     # 允许的渠道，按升级顺序
+  when_unsure: &quot;recommend_and_proceed&quot;        # 或 &quot;ask_and_wait&quot;；对 goal/taste 类无效，必问</code></pre>
+<h3 id="2-2-AttentionRequest-AR-统一-schema">2.2 AttentionRequest（AR）——统一 schema</h3>
+<p>框架的"系统调用"。任何 SDK 的 interrupt / approval / elicitation / notification 都先被适配器翻译成 AR。<strong>准入门槛</strong>：<code>required_action</code>、<code>consequence_if_ignored</code>、<code>time_to_irreversible</code> 三项缺一，就只能进 digest，不能成为收件箱条目。</p>
+<pre><code>{
+  &quot;id&quot;: &quot;ar_01J…&quot;, &quot;task_id&quot;: &quot;t_42&quot;, &quot;agent_id&quot;: &quot;claude-code:worktree-3&quot;,
+  &quot;supersedes_id&quot;: null,           // 重试/更新时指向原 AR，复用同一收件箱条目
+  &quot;kind&quot;: &quot;approval&quot;,              // notify | question | approval | review | escalation
+  &quot;decision_class&quot;: &quot;input&quot;,       // goal | input | constraint | taste；goal/taste 无视风险必问人
+  &quot;headline&quot;: &quot;要删除 3 个旧 migration 文件，不可逆&quot;,   // ≤ 120 字符，描述对人的影响（症状），不写原因
+  &quot;required_action&quot;: &quot;选择删除或保留&quot;,                 // 准入必填：人要做什么
+  &quot;consequence_if_ignored&quot;: &quot;30 分钟后按保留处理，CI 多跑 12 分钟&quot;,  // 准入必填
+  &quot;time_to_irreversible&quot;: &quot;PT30M&quot;, // 准入必填：多久后失去选择权
+  &quot;point_of_no_return&quot;: &quot;step-5&quot;,  // input 类：晚于此步再问已无价值
+  &quot;context&quot;: {                     // 首屏 4 行，消除注意力残留
+    &quot;you_were&quot;: &quot;在 review PR #812&quot;,
+    &quot;i_did&quot;:    &quot;迁移了 auth 路由，测试 41/41 通过&quot;,
+    &quot;i_need&quot;:   &quot;确认能否删除 2023 年的 3 个 migration&quot;,
+    &quot;blast_radius&quot;: &quot;db/migrations/2023_*.sql，影响本地与 CI，不影响生产&quot;
+  },
+  &quot;why_now&quot;: &quot;下一步的 schema 变更依赖此决定&quot;,
+  &quot;proof&quot;: [                       // 可展开的可验证证据；信心≠准确率
+    { &quot;type&quot;: &quot;test_log&quot;, &quot;ref&quot;: &quot;log://test-run-88&quot;, &quot;summary&quot;: &quot;41/41 passed&quot; },
+    { &quot;type&quot;: &quot;diff&quot;,     &quot;ref&quot;: &quot;diff://…&quot;, &quot;summary&quot;: &quot;6 files +212 −40&quot; }
+  ],
+  &quot;what_would_prove_me_wrong&quot;: &quot;若任何环境仍引用 2023 schema 版本号&quot;,
+  &quot;options&quot;: [
+    { &quot;id&quot;: &quot;delete&quot;, &quot;label&quot;: &quot;删除&quot;, &quot;recommended&quot;: true, &quot;consequence&quot;: &quot;CI 需重新跑 12 min&quot; },
+    { &quot;id&quot;: &quot;keep&quot;,   &quot;label&quot;: &quot;保留并加 deprecated 注释&quot; },
+    { &quot;id&quot;: &quot;later&quot;,  &quot;label&quot;: &quot;先跳过，任务结束时再问&quot; }
+  ],
+  &quot;default&quot;: { &quot;option_id&quot;: &quot;keep&quot;, &quot;apply_after&quot;: &quot;PT30M&quot; },   // 仅 Advisory 级允许
+  &quot;risk&quot;: { &quot;level&quot;: &quot;P1&quot;, &quot;reversible&quot;: false, &quot;effects&quot;: [&quot;fs.delete&quot;] },  // effects 按效果分类，非命令字符串
+  &quot;urgency&quot;: &quot;soon&quot;,               // now | soon | whenever
+  &quot;confirm_delay&quot;: &quot;PT60S&quot;,        // 发出前等待，期间自愈则撤回
+  &quot;cost_estimate&quot;: { &quot;interaction_seconds&quot;: 40 },
+  &quot;confidence&quot;: 0.8,               // 只影响推荐项排序，不影响 ask/act
+  &quot;ttl&quot;: &quot;PT4H&quot;,
+  &quot;on_expire&quot;: &quot;apply_default&quot;,    // 强制枚举：apply_default | skip_and_continue | end_task | escalate；P0 仅后两者
+  &quot;batch_key&quot;: &quot;fs.delete:db/migrations&quot;,
+  &quot;deep_link&quot;: &quot;ffa://task/t_42/ar/ar_01J…&quot;,
+  &quot;delivery&quot;: { &quot;state&quot;: &quot;displayed&quot;, &quot;channel&quot;: &quot;inbox&quot;, &quot;at&quot;: &quot;…&quot; }   // sent | delivered | displayed | responded
+}</code></pre>
+<h3 id="2-3-AttentionKernel-注意力内核-">2.3 AttentionKernel（注意力内核）</h3>
+<p>四个子模块，按顺序处理每个 AR：</p>
+<ol><li><strong>Policy（要不要问、以什么级别）</strong>：准入门槛 → 硬规则 → 决策类别 → 信任账本 → 效用计算 → 分类器兜底。输出告警级别 Warning / Caution / Advisory 与自治模式 consent / exception。</li><li><strong>Scheduler（何时、怎么问）</strong>：confirm_delay、断点延迟（三粒度）、合并与冷却、flood 模式、阶段抑制与召回、chattering 检测、渠道选择、升级阶梯。</li><li><strong>Budget（还能问几次）</strong>：速率型滚动窗口 + 线程数上限 + 软/硬阈值。</li><li><strong>Timeout &amp; Fallback（没人回怎么办）</strong>：TTL 到期按 <code>on_expire</code> 执行，Advisory 的自动决策进"已替你决定"审计队列；永远不无限阻塞。</li></ol>
+<h3 id="2-4-HumanStateModel-人的状态-">2.4 HumanStateModel（人的状态）</h3>
+<p><strong>默认 pull 与自报，推断是 opt-in。</strong></p>
+<ul><li>一级信号（默认开启）：显式 <code>/focus</code>、日历 focus block 与会议、上次打开收件箱的时间、正在查看的任务。</li><li>二级信号（opt-in）：IDE/终端键鼠活跃度、前台应用。本地计算，只输出枚举。</li><li>状态：<code>FOCUS</code> → <code>BREAKPOINT(fine | medium | coarse)</code> → <code>IDLE</code> → <code>AWAY</code>。粗断点（commit、测试结束、PR 打开、会议结束、打开收件箱）成本最低；Advisory 只在 coarse 断点投递，Caution 可用 medium。</li></ul>
+<h3 id="2-5-EvidencePacket-证据包-">2.5 EvidencePacket（证据包）</h3>
+<p>任务收尾唯一交付物。<strong>首屏不是 diff。</strong></p>
+<pre><code>首屏：意图/spec 差异（做了什么、没做什么、为什么）| verifier 结论与该 agent 该动作类的历史通过率
+      | 什么能证明我错了 | 风险标签（P0–P3）与理由 | 回滚方式
+展开：变更摘要（文件 × 行数）| 测试/截图/预览 | 我做的假设（未经确认的决定）| 未决问题 | diff</code></pre>
+<p>由<strong>独立 verifier 子 Agent</strong> 生成风险标签与验证证据。架构级变更（新依赖、公共 API、数据模型）需要人的<strong>理解签字</strong>，其余不需要。</p>
+<h3 id="2-6-AttentionLedger-注意力账本-">2.6 AttentionLedger（注意力账本）</h3>
+<p>记录每个 AR 的生命周期：发出 → 投递（渠道、时机、当时状态、投递四态）→ 结果（acted / dismissed / ignored / expired / undone / overridden）→ 停留时长。同时是信任账本、监督退化监测器和指标源。</p>
+<h2 id="3-决策策略-ask-vs-act">3. 决策策略：ask-vs-act</h2>
+<h3 id="3-1-评估顺序">3.1 评估顺序</h3>
+<pre><code>准入门槛 → 硬 deny → 硬 ask → decision_class（goal/taste 必问） → 信任账本（auto_allow / auto_deny）
+        → 效用计算 → 分类器兜底 → 默认 ask</code></pre>
+<p>Agent 不自评是否需要打扰人；<code>confidence</code> 只排序推荐项。</p>
+<h3 id="3-2-动作分类按效果-不按字符串">3.2 动作分类按效果，不按字符串</h3>
+<p>动作类 = (效果类型, 目标范围)，效果类型取自：<code>fs.read / fs.write / fs.delete / net.out / proc.exec / cred / git.push / infra / money / message.out</code>。<code>&amp;&amp;</code> 链、子 shell、脚本拼装按<strong>最终效果</strong>合成一个动作。MCP 的 <code>readOnlyHint / destructiveHint</code> 直接映射为可逆性。字符串规则只作补充。</p>
+<h3 id="3-3-三轴矩阵与告警级别">3.3 三轴矩阵与告警级别</h3>
+<div class=tbl><table><tr><th></th><th>可逆</th><th>不可逆</th></tr><tr><td><strong>范围内、低爆炸半径</strong></td><td>ACT + 回滚点 → digest</td><td>Caution（soon）：ASK 带默认，延迟到断点，可合并</td></tr><tr><td><strong>范围外或外部副作用</strong></td><td>ACT + Advisory notify</td><td>Caution（now）：ASK，阻塞，超时升级</td></tr><tr><td><strong>P0：生产、资金、删除、对外发消息</strong></td><td>Caution（now）</td><td><strong>Warning</strong>：consent + push + 第二人；不可设默认；超时 = end_task 或 escalate</td></tr><tr><td><strong>decision_class = goal 或 taste</strong></td><td>无视上两轴 → 至少 Caution；goal 应在计划期问完，执行期出现计为 spec 缺陷</td><td></td></tr></table></div>
+<h3 id="3-4-自治模式绑定-Sheridan-FAA-">3.4 自治模式绑定（Sheridan × FAA）</h3>
+<div class=tbl><table><tr><th>级别</th><th>触发</th><th>自治模式</th><th>渠道</th><th>OS 打断等级</th></tr><tr><td><strong>Warning</strong></td><td>now + P0，或不可逆 + 外部</td><td><strong>consent</strong>：必须批准</td><td>push + 收件箱 + 第二人</td><td>Time-Sensitive；Critical 需预授权</td></tr><tr><td><strong>Caution</strong></td><td>now + P1；soon + P0/不可逆；goal/taste</td><td><strong>consent</strong></td><td>收件箱 + 周边</td><td>Active</td></tr><tr><td><strong>Advisory</strong></td><td>其余</td><td><strong>exception</strong>：TTL 内可否决，超时按默认执行，进审计队列</td><td>周边 / digest</td><td>Passive</td></tr></table></div>
+<h3 id="3-5-效用计算-仅用于-Advisory-与-Caution-soon-的投递时机-">3.5 效用计算（仅用于 Advisory 与 Caution-soon 的投递时机）</h3>
+<pre><code>surface_now  if  P(need_human) × Cost(wrong)  &gt;  Cost(interrupt | state) + Cost(resume)
+defer        否则，等待下一个符合级别的断点，最长到 ttl 或 point_of_no_return</code></pre>
+<p><code>Cost(interrupt | FOCUS)</code> 取 12 分钟量级；<code>coarse</code> 断点 1 分钟；<code>medium</code> 2 分钟；<code>fine</code> 5 分钟；<code>AWAY</code> 取渠道成本。</p>
+<h3 id="3-6-校准信号">3.6 校准信号</h3>
+<p>Kernel 按动作类持续输出批准率：&gt; 90% 建议放宽为 auto_allow 候选，&lt; 70% 建议收紧或改进 spec；系统级升级率目标 10–15%。</p>
+<h2 id="4-调度器行为">4. 调度器行为</h2>
+<div class=tbl><table><tr><th>行为</th><th>规则</th><th>依据</th></tr><tr><td><strong>确认延迟</strong></td><td>AR 发出前等待 <code>confirm_delay</code>（默认 30–120s），期间自愈即撤回</td><td>医疗告警 delay</td></tr><tr><td><strong>断点延迟</strong></td><td>Advisory 等 coarse 断点，Caution-soon 等 medium 以上；最长到 ttl 或 point_of_no_return</td><td>Iqbal &amp; Bailey 三粒度</td></tr><tr><td><strong>合并与冷却</strong></td><td>同 <code>batch_key</code> 合并；无 key 但同 agent 同 risk 的 5 分钟内合并；同源 cooldown。<strong>不可逆项不合并进 digest</strong></td><td>PagerDuty、Android 16、waxell</td></tr><tr><td><strong>速率预算</strong></td><td>滚动窗口 ≤ 1 / 10 min、≤ 6 / h；短窗口（10 min）与长窗口（1 h）双判定。软阈 80%：Advisory 降级为 digest；硬阈 100%：只放行 Warning/Caution</td><td>ISA-18.2、SRE burn rate、Paperclip</td></tr><tr><td><strong>Flood 模式</strong></td><td>10 分钟内 ≥ 10 条 → 折叠为单条 flood 项，只透出 Warning；窗口新增 &lt; 5 条退出</td><td>ISA-18.2</td></tr><tr><td><strong>Standing 上限</strong></td><td>未处理 &gt; 10 条 → 停止新增 Advisory，强制合并/过期</td><td>EEMUA 191</td></tr><tr><td><strong>线程上限</strong></td><td>待处理线程数 &gt; 4 → 暂停派发新任务</td><td>Symphony</td></tr><tr><td><strong>阶段抑制</strong></td><td><code>/focus</code> 或日历 focus block 期间抑制 Advisory 与 Caution-soon；<strong>抑制而非丢弃</strong>，退出后自动重现；状态面显示"N 条已抑制"；穿透白名单</td><td>Airbus INHIBIT、AC 25.1322、Teams</td></tr><tr><td><strong>Chattering</strong></td><td>同一 AR（同 batch_key 同 effects）24h 内 ≥ 3 次 → 转为单条"修此规则"AR</td><td>AF447、ISA</td></tr><tr><td><strong>升级阶梯</strong></td><td>周边 → 收件箱 → push → 第二人；ack 即停；snooze 只压当前 AR，不压同 key 新 Warning</td><td>PagerDuty</td></tr><tr><td><strong>Auto-resolve</strong></td><td>TTL 到期按 <code>on_expire</code> 执行；Advisory 自动决策进"已替你决定"队列带 undo</td><td>PagerDuty、Ronacher</td></tr><tr><td><strong>静默过久</strong></td><td>自动放行动作无进展 &gt; 5 分钟 → Advisory；agent 卡住必须进 needs-attention，不猜</td><td>Cline、Perplexity</td></tr><tr><td><strong>并发闸门</strong></td><td>估算 FO = NT/IT + 1；利用率 &gt; 70% 暂停派发，&lt; 60% 恢复</td><td>Cummings</td></tr></table></div>
+<h2 id="5-信任账本-v0-2-重做-">5. 信任账本（v0.2 重做）</h2>
+<ul><li><strong>计数单位是证据，不是批准</strong>：某动作类累计 N 次"verifier 通过 + 可撤销 + 未被 undo"才晋升；默认 N = 10。</li><li><strong>不对称</strong>：一次 undo、override 或 verifier 失败即降两级并重置。</li><li><strong>双向监测</strong>：晋升后该类的打断率或回滚率上升 → 自动降级。</li><li><strong>晋升可见可撤回</strong>：晋升在收件箱以 Advisory 通知（Amershi G18），一键撤回；账本本身是可编辑的 allowlist。</li><li><strong>拒绝带教训</strong>：每次 reject 要求一句原因，沉淀为规则喂回 agent 与 Policy。</li><li><strong>治理</strong>：阈值、静默时段、风险标定的修改记录责任人；agent 不能自改。</li><li><strong>P0 类永不 auto_allow。</strong></li></ul>
+<h3 id="5-1-反橡皮章机制">5.1 反橡皮章机制</h3>
+<ul><li>记录每个决策的停留时间；&lt; 3 秒计入 rubber_stamp_rate。</li><li>随机 5% 的 Caution 标记为"深审"，要求展开 proof 才能批准。</li><li>digest 禁止"全部已读"；每条保留独立 risk 标签。</li><li>监测四个监督退化信号：审查时长下降而批准率不变、override 率下降、展开 proof 的比例下降、反馈"不该问我"减少。任一触发 → rationalization 审计，列出过去 7 天最常被秒批的动作类，建议放宽或删除规则。</li></ul>
+<h2 id="6-任务生命周期">6. 任务生命周期</h2>
+<ol><li><strong>Intake（强制 plan/interview 门）</strong>：填 TaskCard。框架用一次结构化表单把所有可预见的决策前置；<strong>goal 类决策必须在此答完</strong>，input 类可带推荐项与 point_of_no_return，constraint 类默认按推荐。</li><li><strong>Plan-of-record</strong>：计划是对象。<strong>计划批准后不逐步问</strong>，只有偏离计划或触及不可逆边界才生成 AR。</li><li><strong>Execute</strong>：默认静默。SDK 事件经适配器 → AR → 准入门槛 → 内核。周边只在 blocked / needs-you / done 点亮。</li><li><strong>Verify</strong>：独立 verifier 跑 done_criteria，打风险标签，生成 proof。不通过则回到 3，不打扰人；三轮失败 → escalation。</li><li><strong>Deliver</strong>：EvidencePacket 作为 review 类 AR。P2/P3 且验证通过 → Advisory + digest（可自动合并）；P1 或架构级 → Caution 进收件箱，架构级需理解签字；P0 → Warning。</li><li><strong>Learn</strong>：账本回写阈值、信任、渠道偏好；per-request 反馈（"不该问我 / 该早点问 / 该问但没问"）回流。</li></ol>
+<h2 id="7-呈现面-Surfaces-">7. 呈现面（Surfaces）</h2>
+<ul><li><strong>周边状态（dark cockpit）</strong>：默认全灭。黄 = blocked，橙 = needs-you，绿 = done，灰点 = shelved/已抑制（独立可见态）。绝不弹窗。</li><li><strong>异常收件箱</strong>：唯一需要人"看"的地方。排序 = (级别, deadline/point_of_no_return, 历史行动概率)。每项 = headline + 4 行 context + <code>why_now</code> + 选项（推荐高亮）+ 单键回答 + "不答会怎样" + 剩余 TTL + 展开 proof。</li><li><strong>已替你决定队列</strong>：Advisory 超时自动决策的独立审计视图，每条带 undo 与 <code>why_not_asked</code>。</li><li><strong>Digest</strong>：按历史行动概率排序，禁止全部已读，不含不可逆项。</li><li><strong>自治面板</strong>：全局 autonomy slider（L0–L5）、当前各动作类等级、速率与分布仪表、"N 条已抑制"。</li><li><strong>渠道</strong>：对齐 OS 打断等级；同一 AR 跨渠道同步；投递四态可观测；deep link 回跳。</li><li><strong>Transcript</strong>：审计视图，默认折叠。</li></ul>
+<h2 id="8-适配器">8. 适配器</h2>
+<div class=tbl><table><tr><th>来源</th><th>输入映射到 AR</th><th>决议映射回运行时</th></tr><tr><td>Claude Agent SDK / Claude Code</td><td><code>PreToolUse</code> / <code>PermissionRequest</code> → approval；<code>AskUserQuestion</code> → question（计划期合并）；<code>Notification</code> → notify/review；<code>Stop</code> → review</td><td><code>permissionDecision</code> + 追加规则；<code>canUseTool</code></td></tr><tr><td>LangGraph</td><td><code>interrupt(payload)</code> / <code>HITLRequest</code></td><td><code>Command(resume=…)</code></td></tr><tr><td>OpenAI Agents SDK</td><td><code>RunResult.interruptions</code></td><td><code>RunState.approve/reject</code></td></tr><tr><td>MCP</td><td><code>elicitation</code> → question；<code>destructiveHint / readOnlyHint</code> → risk.reversible</td><td>elicitation 结果</td></tr><tr><td>A2A</td><td><code>input-required</code> → question</td><td>追加 message</td></tr><tr><td>Temporal / Inngest</td><td>signal 等待 → AR；TTL 用持久 timer</td><td>signal</td></tr><tr><td>gotoHuman / Zapier HITL</td><td>作为外部渠道：AR → review form；<code>updateForReviewId</code> ↔ <code>supersedes_id</code></td><td>webhook</td></tr></table></div>
+<h2 id="9-指标">9. 指标</h2>
+<div class=tbl><table><tr><th>指标</th><th>定义</th><th>目标</th></tr><tr><td>interventions_per_task</td><td>人主动纠正次数</td><td>≤ 2</td></tr><tr><td>surface_rate</td><td>上浮速率（10 min / 1 h 滚动）</td><td>≤ 1 / ≤ 6</td></tr><tr><td>priority_distribution</td><td>Warning / Caution / Advisory 占比</td><td>≈ 5 / 15 / 80</td></tr><tr><td>escalation_rate</td><td>进入人工决策的动作占比</td><td>10–15%</td></tr><tr><td>rubber_stamp_rate</td><td>&lt; 3 秒批准占比</td><td>&lt; 50%</td></tr><tr><td>approval_rate_by_class</td><td>每动作类批准率</td><td>70–90%</td></tr><tr><td>median_interaction_seconds</td><td>IT 中位数</td><td>≤ 90</td></tr><tr><td>standing_count</td><td>未处理 AR 数</td><td>≤ 10</td></tr><tr><td>concurrent_high</td><td>同时未处理 Warning+Caution 数</td><td>≤ 3</td></tr><tr><td>chattering_count</td><td>被标 chattering 的规则数</td><td>→ 0</td></tr><tr><td>flood_events</td><td>flood 模式触发次数</td><td>→ 0</td></tr><tr><td>neglect_time / fan_out</td><td>NT，FO = NT/IT + 1</td><td>↑</td></tr><tr><td>human_utilization</td><td>处理 AR 时间 / 工作时间</td><td>&lt; 70%</td></tr><tr><td>pending_threads</td><td>待处理线程数</td><td>≤ 4</td></tr><tr><td>review_gated_share</td><td>需人工 review 的交付占比</td><td>≈ 20%</td></tr><tr><td>understanding_signoff_rate</td><td>架构级变更有理解签字的比例</td><td>100%</td></tr><tr><td>undo_rate / override_rate</td><td>自动放行被撤销、Advisory 被否决比例</td><td>信任校准信号</td></tr><tr><td>supervision_decay</td><td>四个退化信号</td><td>任一触发审计</td></tr><tr><td>spec_gap_rate</td><td>执行期出现的 goal 类 AR 占比</td><td>→ 0</td></tr><tr><td>delivery_funnel</td><td>sent → delivered → displayed → responded</td><td>可观测</td></tr><tr><td>p0_auto_pass</td><td>必须为 0</td><td>0</td></tr><tr><td>false_alarm_rate</td><td>被 dismiss 或反馈"不该问我"的占比</td><td>↓</td></tr></table></div>
+<h2 id="10-风险与对策">10. 风险与对策</h2>
+<div class=tbl><table><tr><th>风险</th><th>对策</th></tr><tr><td><strong>Out-of-the-loop</strong></td><td>周期性 digest；架构级理解签字；EvidencePacket 首屏是意图差异；自治面板可见</td></tr><tr><td><strong>自动化自满 / 橡皮章</strong></td><td>证据计数 + 不对称降级 + 双向监测；5% 深审抽样；退化信号审计；不可逆项不进 digest</td></tr><tr><td><strong>过度抑制</strong></td><td>Warning 永远穿透；抑制而非丢弃；穿透白名单；<code>on_expire=end_task/escalate</code> 不可被预算覆盖</td></tr><tr><td><strong>静默错误决策</strong></td><td>Advisory 自动决策进独立审计队列带 undo 与 <code>why_not_asked</code></td></tr><tr><td><strong>状态推断隐私 / 不可靠</strong></td><td>默认 pull + 自报 + 日历；推断 opt-in、本地、只出枚举</td></tr><tr><td><strong>Agent 虚报 / 自评</strong></td><td>verifier 独立；agent 不自评是否打扰人</td></tr><tr><td><strong>策略被绕过</strong></td><td>按效果分类，不按字符串</td></tr><tr><td><strong>多工具上下文丢失</strong></td><td>TaskCard、plan-of-record、ledger 跨运行时共享</td></tr><tr><td><strong>认知负债</strong></td><td>understanding_signoff_rate 与 utilization &lt; 70% 互为制衡</td></tr></table></div>
+<h2 id="11-路线图">11. 路线图</h2>
+<div class=tbl><table><tr><th>阶段</th><th>内容</th><th>验证</th></tr><tr><td><strong>P0（2–3 周）</strong></td><td>AR schema v0.2 含准入门槛；内核（policy 三级、scheduler 速率/flood/合并/抑制召回/chattering、timeout 强制枚举）；Claude Code hooks 适配器；CLI 收件箱 + 已替你决定队列</td><td>自用 1 周：surface_rate、priority_distribution、interventions_per_task</td></tr><tr><td><strong>P1</strong></td><td>HumanState（自报 + 日历 + opt-in 推断，三级断点）；digest 排序；账本 v0.2（证据计数、不对称、双向、可撤回）；反橡皮章</td><td>rubber_stamp_rate、undo_rate、supervision_decay</td></tr><tr><td><strong>P2</strong></td><td>EvidencePacket 首屏改版 + verifier + 理解签字；并发闸门；LangGraph / MCP / gotoHuman 适配；行内评论回流</td><td>review_gated_share、understanding_signoff_rate</td></tr><tr><td><strong>P3</strong></td><td>阈值学习；Slack / 手机渠道对齐 OS 等级；团队模式升级阶梯与第二人；Symphony 式"人只审 issue 与成品"</td><td>false_alarm_rate、time_to_first_decision</td></tr></table></div>
+<h2 id="12-待确认的假设">12. 待确认的假设</h2>
+<ul><li>首个运行时以 Claude Code / Claude Agent SDK 为主。</li><li>首个用户是单个开发者同时跑 2–5 个 Agent；团队模式放 P3。</li><li>形态是独立守护进程 + 适配器。</li><li>速率默认值（1/10min、6/h）、flood 阈值（10/10min）、晋升证据数（10）直接沿用告警工程与 v0.1，首轮 benchmark 后校准。</li></ul></main></div>
+<script>(function(){var as=[...document.querySelectorAll('.side a[href^="#"]')];var hs=as.map(function(a){return document.getElementById(a.getAttribute('href').slice(1))});if(!('IntersectionObserver' in window))return;var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){var i=hs.indexOf(e.target);as.forEach(function(a,j){a.classList.toggle('on',j===i)})}})},{rootMargin:'-20% 0px -70% 0px'});hs.forEach(function(h){h&&io.observe(h)})})();</script>
+</body>
+</html>

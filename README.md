@@ -2,7 +2,19 @@
 
 一个把**人的注意力**当作一等调度资源的 Agent 框架设计。
 
-**文章**：[Agent 的断点不是人的断点](https://chopinfeng.github.io/focus-first-agent/)（GitHub Pages，源文件 `docs/index.html`，Markdown 版 `docs/ARTICLE.md`）可分享的页面：https://claude.ai/code/artifact/3618782c-3b93-4014-b88f-22361b492531
+**网站**：https://chopinfeng.github.io/focus-first-agent/ （GitHub Pages，由 `scripts/build-site.py` 从仓库生成）
+
+| 页面 | 链接 |
+|---|---|
+| 文章《Agent 的断点不是人的断点》 | https://chopinfeng.github.io/focus-first-agent/article.html |
+| 设计参考（一页） | https://chopinfeng.github.io/focus-first-agent/design.html |
+| 文档（Markdown 渲染） | https://chopinfeng.github.io/focus-first-agent/docs.html |
+| FFA Inbox 原型 · 14 种结构化控件 | https://chopinfeng.github.io/focus-first-agent/inbox.html |
+| 动态演示 · 三方对照与阶段回看 | https://chopinfeng.github.io/focus-first-agent/demo.html |
+| Kernel Playground | https://chopinfeng.github.io/focus-first-agent/playground.html |
+| 运行报告 | https://chopinfeng.github.io/focus-first-agent/runs.html |
+
+改了任何文档或页面后运行 `python3 scripts/build-site.py` 再提交。可分享的页面：https://claude.ai/code/artifact/3618782c-3b93-4014-b88f-22361b492531
 
 ## 截图
 

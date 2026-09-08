@@ -1,19 +1,4 @@
-<!doctype html>
-<html lang="zh-CN">
-<head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FFA Demo</title>
-</head>
-<body>
-<nav class="site-nav" aria-label="站点"><a class="site-brand" href="index.html"><i></i>Focus-First Agent</a><div class="site-links"><a href="index.html">首页</a><a href="article.html">文章</a><a href="design.html">设计参考</a><a href="docs.html">文档</a><a href="inbox.html">收件箱原型</a><a href="demo.html" class=on>动态演示</a><a href="playground.html">Playground</a><a href="runs.html">运行报告</a><a href="https://github.com/chopinfeng/focus-first-agent" target=_blank rel=noopener>GitHub</a></div></nav>
-<style>.site-nav{display:flex;align-items:center;gap:18px;padding:0 20px;height:42px;background:var(--surface,#fff);border-bottom:1px solid var(--line,#d7ddda);font:13px/1 "IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;position:relative;z-index:50}
-.site-brand{display:inline-flex;align-items:center;gap:8px;font-family:"Manrope","PingFang SC",sans-serif;font-weight:800;font-size:13px;color:var(--ink,#1b2421);text-decoration:none;border:0;white-space:nowrap}
-.site-brand i{width:8px;height:8px;border-radius:50%;background:var(--amber,var(--needs,#c4700f));display:inline-block}
-.site-links{display:flex;gap:2px;margin-left:auto;overflow-x:auto}
-.site-links a{padding:6px 9px;border-radius:4px;color:var(--muted,#62706b);text-decoration:none;border:0;white-space:nowrap}
-.site-links a:hover{color:var(--ink,#1b2421)}.site-links a.on{background:var(--sunken,#eaeeec);color:var(--ink,#1b2421);font-weight:500}
-@media (max-width:640px){.site-nav{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}.site-links{margin-left:0}}</style>
 <script>(function(){var m=/[?&]theme=(light|dark)/.exec(location.search);if(m)document.documentElement.setAttribute("data-theme",m[1])})();</script>
 <title>FFA Demo</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -505,6 +490,3 @@ $('#reset').addEventListener('click',e=>{if(!LIVE.on)return;e.stopImmediatePropa
 document.addEventListener('click',e=>{const b=e.target.closest('#decided .undo');if(b&&LIVE.on){e.stopImmediatePropagation();const d=S.decided[+b.dataset.i];if(d)livePost('/undo',{id:d.ar.id})}},true);
 })();
 </script>
-
-</body>
-</html>

@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Focus-First Agent Framework</title>
+</head>
+<body>
+<nav class="site-nav" aria-label="站点"><a class="site-brand" href="index.html"><i></i>Focus-First Agent</a><div class="site-links"><a href="index.html">首页</a><a href="article.html">文章</a><a href="design.html" class=on>设计参考</a><a href="docs.html">文档</a><a href="inbox.html">收件箱原型</a><a href="demo.html">动态演示</a><a href="playground.html">Playground</a><a href="runs.html">运行报告</a><a href="https://github.com/chopinfeng/focus-first-agent" target=_blank rel=noopener>GitHub</a></div></nav>
+<style>.site-nav{display:flex;align-items:center;gap:18px;padding:0 20px;height:42px;background:var(--surface,#fff);border-bottom:1px solid var(--line,#d7ddda);font:13px/1 "IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;position:relative;z-index:50}
+.site-brand{display:inline-flex;align-items:center;gap:8px;font-family:"Manrope","PingFang SC",sans-serif;font-weight:800;font-size:13px;color:var(--ink,#1b2421);text-decoration:none;border:0;white-space:nowrap}
+.site-brand i{width:8px;height:8px;border-radius:50%;background:var(--amber,var(--needs,#c4700f));display:inline-block}
+.site-links{display:flex;gap:2px;margin-left:auto;overflow-x:auto}
+.site-links a{padding:6px 9px;border-radius:4px;color:var(--muted,#62706b);text-decoration:none;border:0;white-space:nowrap}
+.site-links a:hover{color:var(--ink,#1b2421)}.site-links a.on{background:var(--sunken,#eaeeec);color:var(--ink,#1b2421);font-weight:500}
+@media (max-width:640px){.site-nav{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}.site-links{margin-left:0}}</style>
+<title>Focus-First Agent Framework</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F3F5F4; --surface:#FFFFFF; --sunken:#E9EDEB; --ink:#172220; --muted:#5F6E6A; --line:#D5DDDA;
+  --accent:#0E6B67; --accent-soft:#D8ECEA; --warn:#C4700F; --warn-soft:#F6E5CF; --crit:#B42A26; --crit-soft:#F5DAD8; --good:#2F7A4E; --good-soft:#D9EBDF;
+  --working:#9AA7A3;
+  --display:"Manrope","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+  --body:"IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+  --mono:"IBM Plex Mono","SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1614; --surface:#182120; --sunken:#121A18; --ink:#E4EBE8; --muted:#93A39E; --line:#2A3634;
+    --accent:#5CC1BB; --accent-soft:#163532; --warn:#E39A3F; --warn-soft:#3A2A14; --crit:#E1655F; --crit-soft:#3D1A18; --good:#6CC08B; --good-soft:#163524;
+    --working:#5D6B67;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1614; --surface:#182120; --sunken:#121A18; --ink:#E4EBE8; --muted:#93A39E; --line:#2A3634;
+  --accent:#5CC1BB; --accent-soft:#163532; --warn:#E39A3F; --warn-soft:#3A2A14; --crit:#E1655F; --crit-soft:#3D1A18; --good:#6CC08B; --good-soft:#163524;
+  --working:#5D6B67;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.page{display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;max-width:1120px;margin:0 auto;padding:40px 28px 96px}
+nav.toc{position:sticky;top:24px;align-self:start;font-size:13px;line-height:1.5}
+nav.toc .eyebrow{font-family:var(--display);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+nav.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;border-left:1px solid var(--line)}
+nav.toc a{display:block;padding:5px 0 5px 14px;color:var(--muted);border-bottom:0;border-left:2px solid transparent;margin-left:-1px}
+nav.toc a:hover{color:var(--ink)}
+nav.toc a.sub{padding-left:26px;font-size:12.5px}
+main{max-width:76ch;min-width:0}
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:40px;line-height:1.12;font-weight:800;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700;margin-top:64px;padding-top:24px;border-top:1px solid var(--line);scroll-margin-top:24px}
+h3{font-size:17px;font-weight:700;margin-top:32px;scroll-margin-top:24px}
+h4{font-size:15px;font-weight:600;margin-top:20px}
+p{margin:12px 0}
+.lede{font-size:18px;line-height:1.6;color:var(--ink);margin-top:14px}
+.eyebrow{font-family:var(--display);font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.meta{color:var(--muted);font-size:13px;margin-top:10px}
+.thesis{margin:28px 0 0;padding:20px 22px;background:var(--accent-soft);border-left:3px solid var(--accent);font-family:var(--display);font-weight:600;font-size:17px;line-height:1.55}
+ul,ol{padding-left:22px;margin:10px 0}
+li{margin:5px 0}
+li::marker{color:var(--muted)}
+strong{font-weight:600}
+code{font-family:var(--mono);font-size:.88em;background:var(--sunken);padding:1px 5px;border-radius:3px}
+pre{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--sunken);border:1px solid var(--line);padding:16px 18px;overflow-x:auto;margin:14px 0;border-radius:4px}
+pre code{background:none;padding:0;font-size:inherit}
+.c{color:var(--muted)}
+.k{color:var(--accent)}
+.tbl{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.5}
+th{font-family:var(--display);font-weight:700;text-align:left;font-size:12px;letter-spacing:.04em;color:var(--muted);padding:8px 10px;border-bottom:2px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+.src{color:var(--muted);font-size:12.5px}
+/* inbox exhibit */
+.exhibit{margin:36px 0 8px}
+.exhibit .cap{font-size:12.5px;color:var(--muted);margin-top:8px}
+.inbox{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.inbox-bar{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--muted);background:var(--sunken)}
+.inbox-bar .title{font-family:var(--display);font-weight:700;color:var(--ink);letter-spacing:.02em}
+.lights{display:flex;gap:10px;margin-left:auto;align-items:center}
+.lights span{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot.working{background:var(--working)} .dot.blocked{background:var(--warn);opacity:.6} .dot.needs{background:var(--warn)} .dot.done{background:var(--good)}
+.item{padding:16px 18px 14px;display:grid;grid-template-columns:1fr auto;gap:8px 18px}
+.item .kind{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--warn)}
+.item .headline{font-family:var(--display);font-weight:700;font-size:16px;line-height:1.35;grid-column:1;margin-top:2px}
+.item .ttl{grid-column:2;grid-row:1/3;text-align:right;font-family:var(--mono);font-size:11.5px;color:var(--muted);line-height:1.6}
+.ctx{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:13px;margin-top:6px;padding:10px 12px;background:var(--sunken);border-radius:4px}
+.ctx b{font-family:var(--mono);font-weight:500;font-size:11.5px;color:var(--muted);letter-spacing:.03em;padding-top:2px}
+.opts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.opt{font-family:var(--body);font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink);cursor:default;display:inline-flex;gap:8px;align-items:baseline}
+.opt kbd{font-family:var(--mono);font-size:10.5px;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 4px}
+.opt.rec{border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.opt .cons{color:var(--muted);font-weight:400;font-size:12px}
+.fallback{grid-column:1/-1;font-size:12.5px;color:var(--muted);margin-top:4px}
+/* cards */
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+.card h4{margin-top:0;font-size:14px}
+.card p{font-size:13.5px;margin:8px 0 0;color:var(--muted)}
+.card .n{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.01em;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}
+.stat{padding:14px 16px;border-top:2px solid var(--accent);background:var(--surface);border-left:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0 0 6px 6px}
+.stat .n{font-family:var(--display);font-weight:800;font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+/* matrix */
+.matrix td{font-size:13px}
+.tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:1px 7px;border-radius:3px;letter-spacing:.03em;white-space:nowrap}
+.tag.act{background:var(--good-soft);color:var(--good)} .tag.ask{background:var(--warn-soft);color:var(--warn)} .tag.block{background:var(--crit-soft);color:var(--crit)} .tag.n{background:var(--accent-soft);color:var(--accent)}
+/* diagram */
+figure{margin:18px 0}
+figure svg{width:100%;height:auto;display:block}
+figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
+.d-box{fill:var(--surface);stroke:var(--line);stroke-width:1}
+.d-kernel{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+.d-sub{fill:var(--surface);stroke:var(--accent);stroke-width:1}
+.d-t{font-family:var(--display);font-weight:700;font-size:12.5px;fill:var(--ink)}
+.d-s{font-family:var(--mono);font-size:10.5px;fill:var(--muted)}
+.d-a{fill:none;stroke:var(--muted);stroke-width:1.3;marker-end:url(#arr)}
+.d-a2{fill:none;stroke:var(--accent);stroke-width:1.3;stroke-dasharray:4 3;marker-end:url(#arr2)}
+/* steps */
+.steps{list-style:none;padding:0;margin:14px 0;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);margin:0}
+.steps li::before{content:counter(s);font-family:var(--display);font-weight:800;font-size:18px;color:var(--accent);line-height:1.3}
+.steps li:last-child{border-bottom:0}
+.steps b{font-family:var(--display);font-weight:700}
+.sources{columns:2;column-gap:28px;font-size:12.5px;line-height:1.5}
+.sources li{break-inside:avoid;margin:0 0 6px;padding-left:0;list-style:none}
+.sources a{word-break:break-all;color:var(--muted);border-bottom-color:transparent}
+.sources a:hover{color:var(--accent)}
+@media (max-width:860px){
+  .page{grid-template-columns:1fr;gap:24px;padding:24px 18px 64px}
+  nav.toc{position:static}
+  nav.toc ol{flex-direction:row;flex-wrap:wrap;border-left:0;gap:4px 12px}
+  nav.toc a{padding:3px 0;border-left:0;margin:0} nav.toc a.sub{display:none}
+  h1{font-size:32px}
+  .grid2,.stats{grid-template-columns:1fr}
+  .sources{columns:1}
+  .item{grid-template-columns:1fr} .item .ttl{grid-column:1;grid-row:auto;text-align:left}
+}
+@media (prefers-reduced-motion: no-preference){
+  .dot.needs{animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 45%,transparent)}50%{box-shadow:0 0 0 5px transparent}}
+}
+</style>
+
+<div class="page">
+<nav class="toc" aria-label="目录">
+  <div class="eyebrow">Focus-First Agent</div>
+  <ol>
+    <li><a href="#thesis">命题</a></li>
+    <li><a href="#research">调研发现</a></li>
+    <li><a href="#gaps" class="sub">现有框架的空白</a></li>
+    <li><a href="#goals">设计目标</a></li>
+    <li><a href="#arch">架构</a></li>
+    <li><a href="#abstractions" class="sub">六个核心抽象</a></li>
+    <li><a href="#ar" class="sub">AttentionRequest</a></li>
+    <li><a href="#policy">决策策略</a></li>
+    <li><a href="#scheduler">调度器</a></li>
+    <li><a href="#lifecycle">生命周期</a></li>
+    <li><a href="#surfaces">呈现面</a></li>
+    <li><a href="#uiux">界面规范</a></li>
+    <li><a href="#kernel">框架包</a></li>
+    <li><a href="#adapters">适配器</a></li>
+    <li><a href="#metrics">指标</a></li>
+    <li><a href="#risks">风险</a></li>
+    <li><a href="#roadmap">路线图</a></li>
+    <li><a href="#v02">v0.2 调整</a></li>
+    <li><a href="#usecases">Use case</a></li>
+    <li><a href="#testing">测试方案</a></li>
+    <li><a href="#bench">AttentionBench</a></li>
+    <li><a href="#experiments">实验设计</a></li>
+    <li><a href="#sources">来源</a></li>
+  </ol>
+</nav>
+
+<main>
+<header>
+  <div class="eyebrow">两轮调研 + 框架设计 + 验证方案 · v0.3 · 2026-09-03</div>
+  <h1 style="margin-top:10px">Focus-First Agent Framework</h1>
+  <p class="lede">一个把<strong>人的注意力</strong>当作最稀缺调度资源的 Agent 框架。Agent 的断点不是人的断点，这个框架负责把两者对齐，并像告警工程那样治理打断的速率与分布。</p>
+
+  <div class="exhibit">
+    <div class="inbox" aria-label="异常收件箱示例">
+      <div class="inbox-bar">
+        <span class="title">Inbox</span><span>1 项需要你 · 2 项进 digest</span>
+        <div class="lights" aria-label="Agent 状态">
+          <span><i class="dot working"></i>auth-migrate</span>
+          <span><i class="dot needs"></i>db-cleanup</span>
+          <span><i class="dot done"></i>docs-sync</span>
+        </div>
+      </div>
+      <div class="item">
+        <span class="kind">Caution · approval · P1 · 不可逆 · input</span>
+        <div class="ttl">TTL 3h 41m<br>无回应 → 保留</div>
+        <div class="headline">要删除 3 个 2023 年的 migration 文件</div>
+        <div class="ctx">
+          <b>you_were</b><span>在 review PR #812</span>
+          <b>i_did</b><span>迁移了 auth 路由，测试 41/41 通过</span>
+          <b>i_need</b><span>确认能否删除 db/migrations/2023_*.sql</span>
+          <b>blast_radius</b><span>本地与 CI；不影响生产</span>
+        </div>
+        <div class="opts">
+          <span class="opt rec"><kbd>1</kbd>删除 <span class="cons">CI 重跑 12 min</span></span>
+          <span class="opt"><kbd>2</kbd>保留并加 deprecated 注释</span>
+          <span class="opt"><kbd>3</kbd>任务结束时再问</span>
+        </div>
+        <div class="fallback">为何现在问：下一步 schema 变更依赖此决定 · 已延迟到你的粗断点（PR #812 刚提交）· 本小时上浮 2/6 · <a href="#ar">展开证据</a></div>
+      </div>
+    </div>
+    <div class="cap">框架的最小可见单元：一条 AttentionRequest 在收件箱中的样子。人看到的是"为什么需要我、为何是现在、不答会怎样、按哪个键"，证据可展开，而不是 transcript。</div>
+  </div>
+</header>
+
+<h2 id="thesis">命题</h2>
+<div class="thesis">现有 Agent 框架优化 token、时延和正确率，人的注意力只是副作用。所有主流 SDK 都是逐条打断、无限等待、无预算、无时机感。FFA 在 Agent 运行时和人之间插入一个注意力内核，让每一次"需要你"都经过调度。</div>
+<p>三条设计信念，全部来自调研：</p>
+<ul>
+  <li><strong>打断是效用计算，不是默认行为。</strong>自主执行、发起对话、什么都不做，三者由"推迟代价 vs 打断代价"决定，并随人的状态变化（Horvitz 1999/2003）。</li>
+  <li><strong>可逆性比风险等级更有杠杆。</strong>生产环境仅 0.8% 的动作不可逆（Anthropic）；可逆动作应当直接做并记录回滚点，用事后审计替代事前审批。</li>
+  <li><strong>人看结论和证据，不看过程。</strong>子 Agent 只返回蒸馏结论、diff-first、预览优先，是所有成熟产品收敛出的同一原则。</li>
+  <li><strong>打断要像告警一样治理。</strong>过程控制、航空、医疗和 SRE 早就给出了速率上限、优先级分布、阶段抑制与自动召回、抖动检测这些规则，v0.2 直接沿用。</li>
+</ul>
+
+<h2 id="research">调研发现</h2>
+<p>四路并行调研：HCI 打断科学、Agent 产品实践、HITL 框架与协议、多 Agent 监督与 ambient agents。完整材料在项目 <code>docs/research/</code>。</p>
+
+<div class="stats">
+  <div class="stat"><div class="n">93%</div><div class="l">权限提示被用户批准，审批已退化为仪式（Anthropic 遥测）</div></div>
+  <div class="stat"><div class="n">1/3</div><div class="l">危险命令被人漏掉；分类器抓到 89%，人只抓到 13.6%</div></div>
+  <div class="stat"><div class="n">+441%</div><div class="l">review 时间中位数增幅，2.2 万开发者样本（Faros AI）</div></div>
+  <div class="stat"><div class="n">10–15 min</div><div class="l">程序员被打断后重新开始编辑所需时间（Parnin & Rugaber）</div></div>
+  <div class="stat"><div class="n">91.5%</div><div class="l">人-Agent 错位需要人显式纠正，20,574 个真实会话（arXiv 2605.29442）</div></div>
+  <div class="stat"><div class="n">−19%</div><div class="l">资深开发者用 AI 的实际速度变化，自评却是 +20%（METR 2025）</div></div>
+</div>
+
+<h3>学术研究给出的硬约束</h3>
+<div class="grid2">
+  <div class="card"><h4>打断有时机</h4><p>defer-to-breakpoint：推迟到子任务边界投递，恢复更快、挫败更少，粗粒度断点优于细粒度（Iqbal & Bailey 2008/2010）。FlowLight 用键鼠活动推断可打扰性，中断减少 46%。</p></div>
+  <div class="card"><h4>周边 vs 中心</h4><p>平静技术：信息驻留注意力周边，需要时才移到中心（Weiser & Brown 1996）。可扫视性是关键属性；状态用颜色和位置编码，不用文字通知。</p></div>
+  <div class="card"><h4>一人能管几个 Agent 有公式</h4><p>FO ≈ NT/IT + 1，忽视时间除以交互时间（Olsen & Goodrich）。操作员利用率超过 70% 后绩效衰退（Cummings & Guerlain 2007）。提高 fan-out 的两条路：更自主，或更好的请求界面。</p></div>
+  <div class="card"><h4>完全自动化最危险</h4><p>out-of-the-loop 导致情境意识下降、接管更慢（Endsley & Kiris 1995）。目标是信任校准而非信任最大化（Lee & See 2004）。注意力残留：切换前收尾能清除残留（Leroy 2009）。</p></div>
+</div>
+
+<h3>产品实践已经收敛的模式</h3>
+<div class="tbl"><table>
+<tr><th>模式</th><th>谁在用</th></tr>
+<tr><td>给"为什么需要我"打标签，而非一律 waiting for input</td><td>Devin <code>waiting_for_user / waiting_for_approval</code>；Warp Complete/Request/Error；Claude Code <code>permission_prompt / idle_prompt / agent_needs_input / agent_completed</code></td></tr>
+<tr><td>延迟触发通知，避免抢占</td><td>Claude Code 权限提示等 6 秒、空闲等 60 秒；Desktop 仅在未查看该会话时发 OS 通知；Warp 子 agent 只汇总到父级</td></tr>
+<tr><td>提问前置到计划期，结构化为多选带推荐项</td><td>Claude Code <code>AskUserQuestion</code>；Jules 不回应即自动批准</td></tr>
+<tr><td>硬规则优先、分类器兜底</td><td>Claude Code auto mode，2026-08-14 起默认</td></tr>
+<tr><td>PR 是唯一交接面，Agent 自己照看 PR 到合并</td><td>Cursor Cloud（2026-08）、Devin 睡眠后被 CI 失败或 @ 唤醒</td></tr>
+<tr><td>统一收件箱 / 异常队列</td><td>GitHub Mission Control、Cursor 3 Agents Window、Codex App、Warp 通知邮箱、LangChain agent-inbox、OpenClaw 带 TTL 的 attention state</td></tr>
+<tr><td>三级信任协议 notify / question / review</td><td>LangChain ambient agents</td></tr>
+</table></div>
+
+<h3 id="gaps">现有框架的八个空白</h3>
+<p>逐个核对 LangGraph、HumanLayer、OpenAI Agents SDK、Claude Agent SDK、Vercel AI SDK、Microsoft Agent Framework、CrewAI、Temporal、AG-UI、A2A、MCP 后发现：</p>
+<ol>
+  <li>决策请求没有统一 schema：question、options、default、deadline、consequence、reversibility 从未作为一个对象出现。</li>
+  <li>没有批处理、digest、静默时段、合并同类审批。</li>
+  <li>SDK 层 interrupt 无限等待，没有"超时选安全默认"。只有 Temporal 一类持久工作流有 timeout。</li>
+  <li>信任增长没有量化模型；OpenAI 的 <code>always_approve</code> 和 Claude 的 <code>PermissionRequest</code> 追加规则都是手动。</li>
+  <li>没有 PagerDuty 式升级阶梯对接 Agent 事件。</li>
+  <li>MCP 已有 <code>readOnlyHint / destructiveHint</code>，但没有框架用它驱动 ask-vs-act。</li>
+  <li>面向人的可观测性仍是日志；没有 plan-of-record、偏差、"what I need from you"的结构化事件。</li>
+  <li><strong>注意力预算本身不被建模。</strong>没有框架把"本小时最多打断 N 次"或"用户当前状态"作为调度输入。</li>
+</ol>
+<p>FFA 的每个组件都对应至少一个空白。</p>
+
+<h2 id="goals">设计目标</h2>
+<div class="tbl"><table>
+<tr><th>目标</th><th>指标</th><th>起点</th><th>目标值</th></tr>
+<tr><td>少打断</td><td>每任务人工干预次数</td><td class="num">5.4（Anthropic 内部）</td><td class="num">≤ 2</td></tr>
+<tr><td>打断有节奏</td><td>上浮速率（滚动窗口）</td><td>无上限</td><td class="num">≤ 1 / 10 min，≤ 6 / h</td></tr>
+<tr><td>打断有意义</td><td>橡皮章率：3 秒内批准的占比</td><td class="num">≈ 93% 一律批准</td><td class="num">&lt; 50%</td></tr>
+<tr><td>升级率合理</td><td>进入人工决策的动作占比</td><td class="num">100% 或 0%</td><td class="num">10–15%</td></tr>
+<tr><td>分布健康</td><td>Warning / Caution / Advisory 占比</td><td>无</td><td class="num">≈ 5 / 15 / 80</td></tr>
+<tr><td>恢复快</td><td>每次请求的交互时间 IT</td><td>需重建上下文</td><td class="num">中位数 ≤ 90 秒</td></tr>
+<tr><td>人不过载</td><td>人的利用率；待处理线程数</td><td>未测</td><td class="num">&lt; 70%；≤ 4</td></tr>
+<tr><td>不失去理解</td><td>架构级变更的理解签字覆盖率</td><td class="num">0</td><td class="num">100%</td></tr>
+<tr><td>只审高风险</td><td>需人工 review 的交付占比</td><td class="num">100%</td><td class="num">≈ 20%，覆盖 ≈ 70% 风险</td></tr>
+<tr><td>不漏危险</td><td>P0 不可逆动作被自动放行</td><td>—</td><td class="num">0</td></tr>
+</table></div>
+
+<h2 id="arch">架构</h2>
+<figure>
+<svg viewBox="0 0 960 400" role="img" aria-label="FFA 架构：Agent 运行时经适配器产生 AttentionRequest，进入注意力内核，由人的状态模型调节，输出到呈现面，人的反馈写入账本">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker>
+    <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker>
+  </defs>
+  <!-- runtimes -->
+  <rect class="d-box" x="16" y="60" width="150" height="150" rx="5"/>
+  <text class="d-t" x="30" y="84">Agent 运行时</text>
+  <text class="d-s" x="30" y="108">Claude Code / SDK</text>
+  <text class="d-s" x="30" y="126">LangGraph</text>
+  <text class="d-s" x="30" y="144">OpenAI Agents</text>
+  <text class="d-s" x="30" y="162">MCP · A2A</text>
+  <text class="d-s" x="30" y="180">Temporal</text>
+  <!-- adapters -->
+  <rect class="d-box" x="196" y="96" width="112" height="78" rx="5"/>
+  <text class="d-t" x="210" y="122">适配器</text>
+  <text class="d-s" x="210" y="142">event → AR</text>
+  <text class="d-s" x="210" y="158">decision → resume</text>
+  <!-- kernel -->
+  <rect class="d-kernel" x="338" y="40" width="296" height="190" rx="6"/>
+  <text class="d-t" x="354" y="66">Attention Kernel</text>
+  <rect class="d-sub" x="354" y="80" width="126" height="60" rx="4"/>
+  <text class="d-t" x="366" y="102">Policy</text><text class="d-s" x="366" y="120">ask vs act</text>
+  <rect class="d-sub" x="492" y="80" width="126" height="60" rx="4"/>
+  <text class="d-t" x="504" y="102">Scheduler</text><text class="d-s" x="504" y="120">断点·合并·渠道</text>
+  <rect class="d-sub" x="354" y="152" width="126" height="60" rx="4"/>
+  <text class="d-t" x="366" y="174">Budget</text><text class="d-s" x="366" y="192">任务级·日级</text>
+  <rect class="d-sub" x="492" y="152" width="126" height="60" rx="4"/>
+  <text class="d-t" x="504" y="174">Timeout</text><text class="d-s" x="504" y="192">TTL → 安全默认</text>
+  <!-- surfaces -->
+  <rect class="d-box" x="664" y="60" width="150" height="150" rx="5"/>
+  <text class="d-t" x="678" y="84">呈现面</text>
+  <text class="d-s" x="678" y="108">周边状态灯</text>
+  <text class="d-s" x="678" y="126">异常收件箱</text>
+  <text class="d-s" x="678" y="144">Digest</text>
+  <text class="d-s" x="678" y="162">push · Slack</text>
+  <text class="d-s" x="678" y="180">transcript（折叠）</text>
+  <!-- human -->
+  <rect class="d-box" x="844" y="96" width="100" height="78" rx="5"/>
+  <text class="d-t" x="858" y="122">人</text>
+  <text class="d-s" x="858" y="142">决策 · 撤销</text>
+  <text class="d-s" x="858" y="158">忽略 · 驳回</text>
+  <!-- lower row -->
+  <rect class="d-box" x="338" y="280" width="140" height="70" rx="5"/>
+  <text class="d-t" x="352" y="304">HumanState</text>
+  <text class="d-s" x="352" y="322">FOCUS · BREAKPOINT</text>
+  <text class="d-s" x="352" y="338">IDLE · AWAY</text>
+  <rect class="d-box" x="494" y="280" width="140" height="70" rx="5"/>
+  <text class="d-t" x="508" y="304">Ledger</text>
+  <text class="d-s" x="508" y="322">信任账本 · 指标</text>
+  <text class="d-s" x="508" y="338">阈值学习</text>
+  <rect class="d-box" x="16" y="280" width="292" height="70" rx="5"/>
+  <text class="d-t" x="30" y="304">TaskCard → Plan-of-record → EvidencePacket</text>
+  <text class="d-s" x="30" y="322">跨运行时共享的持久对象</text>
+  <text class="d-s" x="30" y="338">前置提问 · 只报偏差 · 只交证据</text>
+  <!-- arrows -->
+  <path class="d-a" d="M166 135 H194"/>
+  <path class="d-a" d="M308 135 H336"/>
+  <path class="d-a" d="M634 135 H662"/>
+  <path class="d-a" d="M814 135 H842"/>
+  <path class="d-a2" d="M408 278 V232"/>
+  <path class="d-a2" d="M894 176 V315 H636"/>
+  <path class="d-a2" d="M564 278 V232"/>
+  <path class="d-a2" d="M162 278 V190 H166"/>
+  <text class="d-s" x="700" y="308">acted / dismissed / ignored / undone</text>
+  <text class="d-s" x="420" y="256">调节打断成本</text>
+</svg>
+<figcaption>所有"需要人"的事件先变成 AttentionRequest，再由内核决定要不要、何时、经何渠道送到人面前，或者不送。人的每次反应写回账本，校准下一次决策。</figcaption>
+</figure>
+
+<h3 id="abstractions">六个核心抽象</h3>
+<div class="tbl"><table>
+<tr><th>抽象</th><th>是什么</th><th>填补的空白</th></tr>
+<tr><td><strong>TaskCard</strong></td><td>委派时一次写清：goal、scope、constraints、done_criteria、risk_class，以及一份 <em>attention_contract</em>（本任务打断预算、deadline、允许渠道、拿不准时是"推荐并继续"还是"问并等"）。</td><td>#7、#8</td></tr>
+<tr><td><strong>AttentionRequest</strong></td><td>框架的"系统调用"。任何 SDK 的 interrupt、approval、elicitation、notification 都先翻译成它，且必须通过准入门槛：说清人要做什么、不做会怎样、多久后失去选择权。</td><td>#1</td></tr>
+<tr><td><strong>AttentionKernel</strong></td><td>Policy、Scheduler、Budget、Timeout 四个子模块，按顺序处理每个 AR。</td><td>#2、#3、#5、#8</td></tr>
+<tr><td><strong>HumanStateModel</strong></td><td>四态 FOCUS / BREAKPOINT / IDLE / AWAY，断点分 fine / medium / coarse 三粒度。默认靠自报、日历 focus block 和收件箱活动；键鼠推断是 opt-in，本地计算，只输出枚举。</td><td>#8</td></tr>
+<tr><td><strong>EvidencePacket</strong></td><td>任务收尾唯一交付物。首屏是意图与 spec 的差异、verifier 结论与历史通过率、"什么能证明我错了"、风险标签、回滚方式；diff 折叠。架构级变更需要人的理解签字。</td><td>#7</td></tr>
+<tr><td><strong>AttentionLedger</strong></td><td>每个 AR 的生命周期：发出、投递四态、结果、停留时长。同时是信任账本、监督退化监测器和指标源。</td><td>#4</td></tr>
+</table></div>
+
+<h3 id="ar">AttentionRequest schema</h3>
+<pre><code>{
+  "id": "ar_01J…", "task_id": "t_42", "agent_id": "claude-code:worktree-3",
+  <span class="k">"supersedes_id"</span>: null,           <span class="c">// 重试复用同一收件箱条目</span>
+  <span class="k">"kind"</span>: "approval",              <span class="c">// notify | question | approval | review | escalation</span>
+  <span class="k">"decision_class"</span>: "input",       <span class="c">// goal | input | constraint | taste；goal/taste 无视风险必问人</span>
+  <span class="k">"headline"</span>: "要删除 3 个旧 migration 文件，不可逆",   <span class="c">// ≤ 120 字符，写对人的影响，不写原因</span>
+  <span class="k">"required_action"</span>: "选择删除或保留",                <span class="c">// 准入必填</span>
+  <span class="k">"consequence_if_ignored"</span>: "30 分钟后按保留处理，CI 多跑 12 分钟",
+  <span class="k">"time_to_irreversible"</span>: "PT30M",  <span class="c">// 准入必填：多久后失去选择权</span>
+  "point_of_no_return": "step-5",  <span class="c">// input 类：晚于此步再问已无价值</span>
+  <span class="k">"context"</span>: {                     <span class="c">// 首屏 4 行，消除注意力残留</span>
+    "you_were": "在 review PR #812",
+    "i_did":    "迁移了 auth 路由，测试 41/41 通过",
+    "i_need":   "确认能否删除 2023 年的 3 个 migration",
+    "blast_radius": "db/migrations/2023_*.sql，影响本地与 CI，不影响生产"
+  },
+  "why_now": "下一步的 schema 变更依赖此决定",
+  <span class="k">"proof"</span>: [                       <span class="c">// 可展开的可验证证据；信心 ≠ 准确率</span>
+    { "type": "test_log", "ref": "log://test-run-88", "summary": "41/41 passed" },
+    { "type": "diff",     "ref": "diff://…", "summary": "6 files +212 −40" }
+  ],
+  "what_would_prove_me_wrong": "若任何环境仍引用 2023 schema 版本号",
+  "options": [
+    { "id": "delete", "label": "删除", "recommended": true, "consequence": "CI 需重新跑 12 min" },
+    { "id": "keep",   "label": "保留并加 deprecated 注释" },
+    { "id": "later",  "label": "先跳过，任务结束时再问" }
+  ],
+  "default": { "option_id": "keep", "apply_after": "PT30M" },   <span class="c">// 仅 Advisory 级允许</span>
+  "risk": { "level": "P1", "reversible": false, "effects": ["fs.delete"] },  <span class="c">// 按效果分类，不按命令字符串</span>
+  "urgency": "soon",               <span class="c">// now | soon | whenever</span>
+  <span class="k">"confirm_delay"</span>: "PT60S",        <span class="c">// 发出前等待，自愈即撤回</span>
+  "confidence": 0.8,               <span class="c">// 只排序推荐项，不影响 ask/act</span>
+  "ttl": "PT4H",
+  <span class="k">"on_expire"</span>: "apply_default",    <span class="c">// 强制枚举：apply_default | skip_and_continue | end_task | escalate；P0 仅后两者</span>
+  "batch_key": "fs.delete:db/migrations",
+  "deep_link": "ffa://task/t_42/ar/ar_01J…",
+  "delivery": { "state": "displayed", "channel": "inbox" }   <span class="c">// sent | delivered | displayed | responded</span>
+}</code></pre>
+<p>高亮字段里，准入三项和 <code>on_expire</code> 枚举来自告警工程与 Zapier 的先例，<code>decision_class</code> 来自"何时该问"研究与设计师的批评，<code>proof</code> 来自"信心不等于准确率"的实验结果。它们在现有框架中集体缺席。</p>
+
+<h2 id="policy">决策策略：ask vs act</h2>
+<p>评估顺序借鉴 Claude Agent SDK 的六步权限模型，加入账本和效用两层：</p>
+<pre><code>准入门槛 → 硬 deny → 硬 ask → decision_class（goal/taste 必问） → 信任账本 → 效用计算 → 分类器兜底 → 默认 ask</code></pre>
+<p>Agent 不自评是否需要打扰人；动作类按效果分类（写入路径、网络出口、进程、凭据、不可逆性），链式命令和脚本拼装按最终效果算一个动作，字符串规则只作补充。</p>
+
+<h3>三轴矩阵与告警级别</h3>
+<div class="tbl"><table class="matrix">
+<tr><th></th><th>可逆</th><th>不可逆</th></tr>
+<tr><td><strong>范围内，低爆炸半径</strong></td><td><span class="tag act">ACT</span> 记录回滚点，进 digest</td><td><span class="tag ask">Caution · soon</span> 带默认，延迟到断点，可合并</td></tr>
+<tr><td><strong>范围外或外部副作用</strong></td><td><span class="tag act">ACT</span> + <span class="tag n">Advisory notify</span></td><td><span class="tag ask">Caution · now</span> 阻塞，超时升级</td></tr>
+<tr><td><strong>P0：生产、资金、删除、对外发消息</strong></td><td><span class="tag ask">Caution · now</span></td><td><span class="tag block">Warning</span> consent + push + 第二人；不可设默认；超时 = end_task 或 escalate</td></tr>
+<tr><td><strong>decision_class = goal 或 taste</strong></td><td colspan="2"><span class="tag ask">至少 Caution</span> 无视上两轴；goal 应在计划期问完，执行期出现计为 spec 缺陷</td></tr>
+</table></div>
+
+<h3>三级告警与自治模式</h3>
+<div class="tbl"><table>
+<tr><th>级别</th><th>触发</th><th>自治模式</th><th>渠道</th><th>OS 打断等级</th></tr>
+<tr><td><span class="tag block">Warning</span></td><td>now + P0，或不可逆 + 外部</td><td>consent：必须批准</td><td>push + 收件箱 + 第二人</td><td>Time-Sensitive；Critical 需预授权</td></tr>
+<tr><td><span class="tag ask">Caution</span></td><td>now + P1；soon + P0/不可逆；goal/taste</td><td>consent</td><td>收件箱 + 周边</td><td>Active</td></tr>
+<tr><td><span class="tag n">Advisory</span></td><td>其余</td><td>exception：TTL 内可否决，超时按默认执行，进"已替你决定"队列</td><td>周边 / digest</td><td>Passive</td></tr>
+</table></div>
+<p>这是 Sheridan 的 management by consent 与 by exception，绑定到 FAA 飞行甲板告警的三级。"安全默认"只存在于 Advisory。</p>
+
+<h3>效用计算</h3>
+<pre><code>surface_now  if  P(need_human) × Cost(wrong)  &gt;  Cost(interrupt | state) + Cost(resume)
+defer        if  上式不成立 且 存在安全默认
+act          if  P(need_human) &lt; act_threshold(risk) 且 reversible</code></pre>
+<p>效用计算只决定 Advisory 与 Caution-soon 的投递时机。打断成本随状态取值：FOCUS 取 12 分钟量级，粗断点 1 分钟，中断点 2 分钟，细断点 5 分钟，AWAY 取渠道成本。Kernel 按动作类输出批准率：高于 90% 建议放宽，低于 70% 建议收紧或改进 spec；系统级升级率目标 10 到 15%。</p>
+
+<h3>信任账本（v0.2 重做）</h3>
+<ul>
+  <li><strong>计数单位是证据，不是批准。</strong>某动作类累计 10 次"verifier 通过 + 可撤销 + 未被 undo"才晋升。</li>
+  <li><strong>不对称。</strong>一次 undo、override 或 verifier 失败即降两级并重置。晋升后若该类的打断率或回滚率上升，自动降级。</li>
+  <li><strong>晋升可见可撤回。</strong>晋升以 Advisory 通知，一键撤回；账本本身是可编辑的 allowlist；阈值修改记录责任人，Agent 不能自改。</li>
+  <li><strong>拒绝带教训。</strong>每次 reject 要求一句原因，沉淀为规则喂回 Agent。P0 类永不自动放行。</li>
+  <li><strong>反橡皮章。</strong>记录停留时间；随机 5% 的 Caution 要求展开证据才能批准；digest 禁止全部已读且不含不可逆项；监测四个退化信号（审查时长降而批准率不变、否决率降、展开证据比例降、反馈减少），任一触发就生成不可抑制的审计请求。</li>
+</ul>
+
+<h2 id="scheduler">调度器行为</h2>
+<div class="tbl"><table>
+<tr><th>行为</th><th>规则</th><th>依据</th></tr>
+<tr><td>确认延迟</td><td>AR 发出前等待 30 到 120 秒，期间自愈即撤回。</td><td class="src">医疗告警 delay</td></tr>
+<tr><td>断点延迟</td><td>Advisory 等粗断点，Caution-soon 等中断点以上；最长到 TTL 或 point of no return。</td><td class="src">Iqbal & Bailey 三粒度</td></tr>
+<tr><td>合并与冷却</td><td>同 batch_key 合并；无 key 但同 Agent 同风险的 5 分钟内合并；同源冷却。不可逆项不合并进 digest。</td><td class="src">PagerDuty、Android 16、waxell</td></tr>
+<tr><td>速率预算</td><td>滚动窗口 ≤ 1 / 10 min、≤ 6 / h，短长双窗口判定。软阈 80% 时 Advisory 降级为 digest，硬阈 100% 时只放行 Warning 与 Caution。</td><td class="src">ISA-18.2、SRE burn rate、Paperclip</td></tr>
+<tr><td>Flood 模式</td><td>10 分钟内 ≥ 10 条，折叠为单条 flood 项，只透出 Warning；窗口新增 &lt; 5 条退出。</td><td class="src">ISA-18.2</td></tr>
+<tr><td>Standing 与线程上限</td><td>未处理 &gt; 10 条停止新增 Advisory；待处理线程 &gt; 4 暂停派发新任务。</td><td class="src">EEMUA 191、Symphony</td></tr>
+<tr><td>阶段抑制与召回</td><td><code>/focus</code> 或日历 focus block 期间抑制 Advisory 与 Caution-soon。抑制而非丢弃，退出后自动重现；状态面显示"N 条已抑制"；穿透白名单。</td><td class="src">Airbus INHIBIT、AC 25.1322、Teams</td></tr>
+<tr><td>Chattering</td><td>同一 AR 24 小时内 ≥ 3 次，转为单条"修此规则"请求。</td><td class="src">AF447、ISA</td></tr>
+<tr><td>升级阶梯</td><td>周边 → 收件箱 → push → 第二人；ack 即停；snooze 只压当前 AR，不压同 key 的新 Warning。</td><td class="src">PagerDuty</td></tr>
+<tr><td>Auto-resolve</td><td>TTL 到期按 on_expire 执行；Advisory 的自动决策进"已替你决定"队列，带 undo 与"为何没问"。</td><td class="src">PagerDuty、Ronacher</td></tr>
+<tr><td>静默过久</td><td>自动放行动作无进展 &gt; 5 分钟生成 Advisory；Agent 卡住必须进 needs-attention，不猜。</td><td class="src">Cline、Perplexity</td></tr>
+<tr><td>并发闸门</td><td>估算 FO = NT / IT + 1；利用率 &gt; 70% 暂停派发，&lt; 60% 恢复。</td><td class="src">Cummings & Guerlain</td></tr>
+</table></div>
+
+<h2 id="lifecycle">任务生命周期</h2>
+<ol class="steps">
+  <li><div><b>Intake（强制 plan/interview 门）</b>：填 TaskCard。框架用一次结构化表单把所有可预见的决策前置。goal 类决策必须在此答完，input 类带推荐项与 point of no return，constraint 类默认按推荐。</div></li>
+  <li><div><b>Plan-of-record</b>：计划是对象不是文本。计划批准后不逐步问，只有偏离计划或触及不可逆边界才生成 AR。</div></li>
+  <li><div><b>Execute</b>：默认静默。SDK 事件经适配器变成 AR 进内核。周边状态灯实时反映 working / blocked / needs-you / done。</div></li>
+  <li><div><b>Verify</b>：独立 verifier 跑 done_criteria，打风险标签，生成证据。不通过则回到上一步，不打扰人。</div></li>
+  <li><div><b>Deliver</b>：EvidencePacket 作为 review 类 AR 进收件箱。P2/P3 且验证通过的可配置为自动合并加 digest 通知。</div></li>
+  <li><div><b>Learn</b>：账本回写阈值、信任、渠道偏好。</div></li>
+</ol>
+
+<h2 id="surfaces">呈现面</h2>
+<div class="grid2">
+  <div class="card"><h4>周边状态（dark cockpit）</h4><p>默认全灭，working 不亮。黄是 blocked，橙是 needs-you，绿是 done，灰点是 shelved 或已抑制，独立可见。绝不弹窗。</p></div>
+  <div class="card"><h4>异常收件箱</h4><p>唯一需要人"看"的地方。排序按 urgency、deadline、风险、价值。每项是 headline、四行 context、带默认高亮的选项、单键回答，并显示不回答会发生什么和剩余 TTL。</p></div>
+  <div class="card"><h4>Digest 与"已替你决定"队列</h4><p>Digest 按历史行动概率排序，禁止全部已读，不含不可逆项。Advisory 超时自动决策进独立审计队列，每条带 undo 与"为何没问"。另有自治面板：全局 autonomy slider、各动作类等级、速率与分布仪表、已抑制计数。</p></div>
+  <div class="card"><h4>渠道与 transcript</h4><p>终端、桌面、手机 push、Slack。同一 AR 跨渠道同步，任一处回答即全局解决。transcript 降级为审计视图，默认折叠。</p></div>
+</div>
+
+<h2 id="uiux">界面规范：呈现本身不能消耗注意力</h2>
+<p>框架保护注意力，呈现它的界面也不能反过来消耗注意力。规范全文在 <code>docs/UI-UX.md</code>，可点的原型在 <a href="https://claude.ai/code/artifact/e388218d-e893-48f4-bf95-9824704f05f2">FFA Inbox</a>（含 14 种结构化介入控件），动态演示在 <a href="https://claude.ai/code/artifact/3b2a08cc-af50-4794-994a-82feb8b1782b">FFA Demo</a>：75 分钟压缩时段里三个 Agent 的事件如何被合并、延迟到断点、超时默认、洪水折叠与 Warning 穿透，并与逐条弹窗并排计数。一句话：<strong>界面的成功状态是"什么都没有"</strong>。正常运转的 FFA 界面在大多数时间应当是空的、暗的、静止的。</p>
+<div class="tbl"><table>
+<tr><th>原则</th><th>含义</th><th>反例</th></tr>
+<tr><td>暗舱</td><td>正常即无灯。working 不显示，只有 blocked、needs-you、done 出现</td><td>每个 Agent 一个 spinner，流式输出滚动</td></tr>
+<tr><td>一眼即懂</td><td>周边信息用颜色和位置编码，1 秒内读完</td><td>状态栏里写一句话进度</td></tr>
+<tr><td>一次一屏，不滚动</td><td>一条决策的全部信息在一屏内；首屏最多 5 条</td><td>无限列表</td></tr>
+<tr><td>决策优先于信息</td><td>首屏只放"要你做什么"和选项，证据在展开层</td><td>先放 diff 再放问题</td></tr>
+<tr><td>单键作答</td><td>每条请求可用 1、2、3 回答，键位可见</td><td>点开、滚动、再确认</td></tr>
+<tr><td>静止</td><td>内容不自动移动；新条目不推挤正在读的条目</td><td>列表顶部实时插入，toast 堆叠</td></tr>
+<tr><td>不计数</td><td>没有未读数、红点、进度条。唯一允许的数字是"已抑制 N"</td><td>角标 12</td></tr>
+<tr><td>默认无声</td><td>没有声音和振动；Warning 也只用一次可确认提示</td><td>每次完成叮一声</td></tr>
+<tr><td>说明代价</td><td>每条显示阅读预估、不答会怎样、剩余时间</td><td>只有 Approve / Deny</td></tr>
+<tr><td>可关的一切都可关</td><td>抑制、snooze、降级一键；被抑制的可见但不打扰</td><td>关掉通知就完全失联</td></tr>
+</table></div>
+<p>界面本身也有可度量的预算：周边状态每次注视 1 秒内读完，一条请求首屏 20 秒内读完且不超过 60 个汉字，决策所需滚动为零，digest 不超过 25 行，动效只在状态变化时出现一次。每个新元素上线前回答一个问题："去掉它，注意力成本会上升吗？"不能证明就不加。</p>
+
+<h2 id="kernel">框架包与 Playground</h2>
+<p>内核已作为独立包 <code>@focus-first/ffa</code> 提交到仓库的 <code>ffa/</code> 目录：按效果分类、三级告警、断点延迟、合并、flood、超时默认、审批记忆、证据门控、bypass 模式与回看记录，附 AttentionRequest JSON Schema 和 13 条不变量测试。同一份内核代码打包成了浏览器里可运行的 <a href="https://claude.ai/code/artifact/0d34892a-7595-4acd-a0b0-701342fd278b">Kernel Playground</a>：点按钮产生事件，看它如何路由、延迟、合并、超时，切到 bypass 看哪些事会静默发生。</p>
+
+<h2 id="adapters">适配器</h2>
+<p>不重造运行时。每个来源只做两件事：把事件翻译成 AR，把 AR 决议翻译回恢复调用。</p>
+<div class="tbl"><table>
+<tr><th>来源</th><th>输入映射到 AR</th><th>决议映射回运行时</th></tr>
+<tr><td>Claude Agent SDK / Claude Code</td><td><code>PreToolUse</code>、<code>PermissionRequest</code> → approval；<code>AskUserQuestion</code> → question；<code>Notification</code> 的 idle_prompt / agent_needs_input / agent_completed → notify 或 review；<code>Stop</code> → review</td><td><code>permissionDecision</code> 加追加规则；<code>canUseTool</code> 回调</td></tr>
+<tr><td>LangGraph</td><td><code>interrupt(payload)</code>、<code>HITLRequest</code> 按 allowed_decisions 映射</td><td><code>Command(resume=…)</code></td></tr>
+<tr><td>OpenAI Agents SDK</td><td><code>RunResult.interruptions</code> → approval</td><td><code>RunState.approve / reject</code></td></tr>
+<tr><td>MCP</td><td><code>elicitation</code> → question；<code>destructiveHint / readOnlyHint</code> 直接喂给 Policy 的可逆性判断</td><td>elicitation 结果</td></tr>
+<tr><td>A2A</td><td><code>input-required</code> → question</td><td>追加 message</td></tr>
+<tr><td>Temporal / Inngest</td><td>signal 等待 → AR；TTL 用持久 timer 实现</td><td>signal</td></tr>
+</table></div>
+
+<h2 id="metrics">指标</h2>
+<div class="tbl"><table>
+<tr><th>指标</th><th>定义</th></tr>
+<tr><td><code>interventions_per_task</code></td><td>人主动纠正次数</td></tr>
+<tr><td><code>surfaces_per_day</code></td><td>主动上浮条数，目标 ≤ 5</td></tr>
+<tr><td><code>rubber_stamp_rate</code></td><td>3 秒内批准的占比，越低越好</td></tr>
+<tr><td><code>acted / dismissed / ignored / expired</code></td><td>AR 结果分布，用于学阈值</td></tr>
+<tr><td><code>median_interaction_seconds</code></td><td>IT 中位数</td></tr>
+<tr><td><code>neglect_time</code></td><td>无人干预下 Agent 持续产出时长</td></tr>
+<tr><td><code>human_utilization</code></td><td>处理 AR 时间 / 工作时间，保持在 70% 以下</td></tr>
+<tr><td><code>review_gated_share</code></td><td>需人工 review 的交付占比</td></tr>
+<tr><td><code>undo_rate</code></td><td>自动放行后被撤销比例，信任校准信号</td></tr>
+<tr><td><code>p0_auto_pass</code></td><td>必须为 0</td></tr>
+<tr><td><code>false_alarm_rate</code></td><td>被 dismiss 的 AR 占比</td></tr>
+</table></div>
+
+<h2 id="risks">风险与对策</h2>
+<div class="tbl"><table>
+<tr><th>风险</th><th>对策</th></tr>
+<tr><td><strong>Out-of-the-loop</strong>：自动化太多，人失去情境意识</td><td>周期性一屏 digest；关键阶段保持"提议 + 确认"；EvidencePacket 强制列出假设</td></tr>
+<tr><td><strong>自动化自满</strong>：信任账本让人不再看</td><td>undo_rate 与 rubber_stamp_rate 触发"抽查"AR；账本升级在 digest 中显式告知</td></tr>
+<tr><td><strong>过度抑制</strong>：把真正紧急的压进 digest</td><td>P0/P1 永远可穿透静默；on_expire 为 block 时不可被预算覆盖</td></tr>
+<tr><td><strong>状态推断隐私</strong></td><td>全部本地计算，只输出四态枚举，不存原始活动</td></tr>
+<tr><td><strong>Agent 虚报进度</strong>，调研中上升最快的错位</td><td>verifier 独立于执行 Agent；done_criteria 必须可机器验证</td></tr>
+<tr><td><strong>多工具上下文丢失</strong></td><td>TaskCard、plan-of-record、ledger 是跨运行时共享的持久对象</td></tr>
+<tr><td><strong>静默错误决策</strong></td><td>Advisory 自动决策进独立审计队列，带 undo 与"为何没问"；goal 与 taste 类从不进入该队列</td></tr>
+<tr><td><strong>策略被绕过</strong></td><td>按效果分类，不按字符串；链式与拼装命令按最终效果判定</td></tr>
+<tr><td><strong>认知负债</strong></td><td>架构级变更的理解签字率与利用率 &lt; 70% 互为制衡</td></tr>
+</table></div>
+
+<h2 id="roadmap">路线图</h2>
+<div class="tbl"><table>
+<tr><th>阶段</th><th>内容</th><th>验证</th></tr>
+<tr><td><strong>P0</strong>，2 到 3 周</td><td>AR schema v0.2 含准入门槛；内核（三级告警、速率与 flood、合并、抑制召回、chattering、超时枚举）；Claude Code hooks 适配器；CLI 收件箱与"已替你决定"队列</td><td>自用 1 周：surface_rate、priority_distribution、interventions_per_task</td></tr>
+<tr><td><strong>P1</strong></td><td>HumanState（自报 + 日历 + opt-in 推断，三级断点）；digest 排序；账本 v0.2；反橡皮章</td><td>rubber_stamp_rate、undo_rate、supervision_decay</td></tr>
+<tr><td><strong>P2</strong></td><td>EvidencePacket 首屏改版 + verifier + 理解签字；并发闸门；LangGraph、MCP、gotoHuman 适配器</td><td>review_gated_share、understanding_signoff_rate</td></tr>
+<tr><td><strong>P3</strong></td><td>阈值学习；Slack 与手机渠道；团队模式升级阶梯</td><td>false_alarm_rate、time_to_first_decision</td></tr>
+</table></div>
+
+<h3>待确认的假设</h3>
+<ul>
+  <li>首个运行时以 Claude Code / Claude Agent SDK 为主，hooks 与权限模型最完整，适配成本最低。</li>
+  <li>首个用户是单个开发者同时跑 2 到 5 个 Agent 的场景；团队升级阶梯放到 P3。</li>
+  <li>形态是独立守护进程加适配器，而不是某个 IDE 的插件，以便跨运行时共享账本。</li>
+</ul>
+
+<h2 id="v02">v0.2 调整：第二轮调研对比</h2>
+<p>第二轮四路调研（跨领域告警、业界观点与人机交互指南、评测与用户模拟器、第二批产品）逐条对照 v0.1。骨架没有被推翻，四个地方被证据击中，全部改了。逐条决策在 <code>docs/CHANGELOG-v0.2.md</code>。</p>
+<div class="grid2">
+  <div class="card"><h4>信任账本"10 次批准即晋升"是错的</h4><p>批准不是证据（Karpathy、Osmani）；信任积累慢、蒸发快（Kent Beck）；一个团队每天 200 多个审批改成批量批准，六个月后无人真在看（waxell）；Anthropic 数据里老用户自动批准升到 40% 的同时打断率从 5% 升到 9%。改为证据计数、不对称降级、双向监测、晋升可撤回。</p></div>
+  <div class="card"><h4>只按风险 × 可逆性决定问不问不够</h4><p>品味和目标类决策与风险无关，必须问人（Maggie Appleton）；goal 类澄清严重前置，轨迹 70% 处再问已无用，constraint 类几乎无益（Ask Early, Ask Late, Ask Right）。新增第三轴 decision_class，goal 强制在计划期问完。</p></div>
+  <div class="card"><h4>4 行上下文提高的是信心不是准确率</h4><p>更好的 trace 界面减少了找错时间，但 "improved confidence didn't translate to better accuracy"（Grunde-McLaughlin 等 2026）。AR 和证据包都加可展开的可验证证据与"什么能证明我错了"，首屏改为意图差异 + verifier 结论。</p></div>
+  <div class="card"><h4>预算按"每任务次数"太粗</h4><p>ISA-18.2 与 EEMUA 191 给出稳态 &lt; 1 条 / 10 分钟、≥ 10 条 / 10 分钟即 flood、优先级分布 80 / 15 / 5；航空给出阶段抑制与自动召回；医疗给出 delay 与二级响应人。全部沿用为速率型预算、flood 模式、抑制召回、chattering 检测。</p></div>
+</div>
+<h3>逐条决策摘要</h3>
+<div class="tbl"><table>
+<tr><th>组件</th><th>采纳</th><th>拒绝或延后</th></tr>
+<tr><td>AR schema</td><td>准入三项必填；on_expire 强制枚举（Zapier）；decision_class；proof 与 what_would_prove_me_wrong；confirm_delay；supersedes_id（gotoHuman）；delivery 四态（Happy #1383）；deep_link；why_now</td><td>—</td></tr>
+<tr><td>Policy</td><td>Warning / Caution / Advisory 绑定 consent / exception（Sheridan × FAA）；按效果分类（Cursor denylist 被绕过）；Agent 不自评是否打扰人；批准率 70 到 90% 与升级率 10 到 15% 作校准信号</td><td>Agent 按自身置信度决定是否暂停（拒绝）</td></tr>
+<tr><td>Scheduler</td><td>速率预算与双窗口；flood；standing 与线程上限；抑制而非丢弃 + 自动召回 + 白名单；chattering；ack / snooze / auto-resolve 语义；断点三粒度；静默过久；digest 按行动概率排序且不含不可逆项</td><td>键鼠推断作默认（降为 opt-in）</td></tr>
+<tr><td>Trust ledger</td><td>证据计数；不对称降级；双向监测；晋升通知可撤回；拒绝带原因；治理记录责任人；反橡皮章与退化信号审计</td><td>—</td></tr>
+<tr><td>EvidencePacket</td><td>首屏意图差异 + verifier + 什么能证明我错了；历史通过率；架构级理解签字</td><td>人审每一行（拒绝）；完全不看代码（仅 P3 允许）；行内评论回流（延后 P2）</td></tr>
+<tr><td>Surfaces</td><td>dark cockpit；自治面板与 slider；per-request 反馈；对齐 OS 打断等级</td><td>Critical 穿透静音（仅 Warning 且预授权）</td></tr>
+<tr><td>Benchmark</td><td>ACS 拆三项 + Pareto；Fan-out；point of no return 与 wasted compute；模拟人橡皮章参数实证化；非合作 persona；Saber 三类陷阱 + Late-Refusal；监督退化指标；模拟器验证协议（Co-Gym）；oracle 用 EVPI 定义。<strong>v0.3</strong>：Attention per Task 对齐 cost per task；反事实回放的价值层与 ROA</td><td>—</td></tr>
+</table></div>
+
+<h2 id="usecases">最终 Use case</h2>
+<p>二十个 use case 覆盖框架的每个组件与调研发现的每个空白。每个都在 <code>docs/USE-CASES.md</code> 里给出前置、主流程、分支和可验收的注意力行为，并一一对应场景测试与 benchmark 任务。</p>
+<div class="tbl"><table>
+<tr><th>#</th><th>名称</th><th>关键验收</th></tr>
+<tr><td>UC-01</td><td>长任务静默执行，只报偏差</td><td>37 次范围内工具调用进 digest；面向人的上浮 = 1 偏差 + 1 交付</td></tr>
+<tr><td>UC-02</td><td>不可逆动作遇到 FOCUS，延迟到断点</td><td>FOCUS 期间收件箱 0 新增；投递落在断点后 ≤ 5 秒；Agent 等待期间不阻塞</td></tr>
+<tr><td>UC-03</td><td>同类审批合并为一次决策</td><td>12 次写入 → 1 项，账本计数 +12</td></tr>
+<tr><td>UC-04</td><td>人不在时 Advisory 超时按默认执行，进"已替你决定"队列</td><td>无推送；等待 ≤ 20 分钟；可 undo；goal/taste 类永不出现在该队列</td></tr>
+<tr><td>UC-05</td><td>P0 动作永不自动放行</td><td>预算耗尽、focus 中、AWAY 三种情况仍 ≤ 5 秒穿透；p0_auto_pass = 0</td></tr>
+<tr><td>UC-06</td><td>五个 Agent 并行，利用率闸门</td><td>利用率 &gt; 70% 暂停派发，&lt; 60% 恢复</td></tr>
+<tr><td>UC-07</td><td>计划期前置提问，不答按推荐</td><td>4 个决策 → 1 个表单；执行期由此引发的 AR ≤ 1</td></tr>
+<tr><td>UC-08</td><td>交付证据包，按风险分流 review</td><td>review 项占交付 ≈ 20%；首屏含结论、测试、风险、假设、回滚</td></tr>
+<tr><td>UC-09</td><td>信任账本按证据晋升、不对称降级、晋升可撤回</td><td>仅批准无 verifier 证据不计数；undo 降两级；晋升通知可一键撤回</td></tr>
+<tr><td>UC-10</td><td>Agent 虚报完成被 Verifier 拦下</td><td>前两轮失败收件箱 0 新增；三轮后 escalation</td></tr>
+<tr><td>UC-11</td><td>离线时紧急事项推送手机，跨渠道一次解决</td><td>推送含 headline + 默认 + TTL；解决后其他渠道 ≤ 3 秒消失</td></tr>
+<tr><td>UC-12</td><td>专注模式：抑制而非丢弃，退出自动重现</td><td>只有 Warning 穿透；状态面显示已抑制计数；结束 ≤ 10 秒重现</td></tr>
+<tr><td>UC-13</td><td>离开两小时后回来，一屏恢复</td><td>首次决策 ≤ 90 秒；digest ≤ 25 行</td></tr>
+<tr><td>UC-14</td><td>两个运行时的请求进同一收件箱</td><td>字段完整度一致；决议往返 ≤ 1 秒</td></tr>
+<tr><td>UC-15</td><td>用户撤销自动放行的动作</td><td>文件回到回滚点；Agent 收到撤销通知</td></tr>
+<tr><td>UC-16</td><td>告警洪水：10 分钟内 12 条 AR</td><td>收件箱新增 ≤ 1 项（Warning 除外）；退出后有效项重新投递</td></tr>
+<tr><td>UC-17</td><td>抖动规则转为"修规则"</td><td>第 4 次同类动作不再逐条打断</td></tr>
+<tr><td>UC-18</td><td>低风险但属于品味/目标的决策必须问人</td><td>taste/goal 从不进"已替你决定"队列；执行期 goal 计入 spec_gap</td></tr>
+<tr><td>UC-19</td><td>自动放行的命令静默过久 / Agent 卡住</td><td>5 分钟内生成 Advisory；卡住进 needs-attention 而非继续猜</td></tr>
+<tr><td>UC-20</td><td>监督退化被检测并触发审计</td><td>审计 AR 不可抑制；下一周期橡皮章率下降</td></tr>
+</table></div>
+
+<h2 id="testing">测试方案</h2>
+<p>让注意力行为和安全不变量像功能正确性一样可回归。所有时间依赖走虚拟时钟，人由 SimulatedHuman 扮演。</p>
+<div class="grid2">
+  <div class="card"><h4>L1 内核单元</h4><p>AR schema 校验；Policy 决策表（风险 × 可逆 × 范围 × 信任 → ACT / ASK_DEFER / ASK_NOW / BLOCK）；效用阈值；Scheduler 的延迟、合并、静默、渠道、升级、TTL、闸门；Budget；信任账本状态机；HumanState 转移与迟滞。</p></div>
+  <div class="card"><h4>L2 适配器集成</h4><p>用录制的真实 SDK 事件作 fixture：Claude Code hooks、Agent SDK canUseTool、LangGraph HITLRequest、OpenAI interruptions、MCP elicitation 与 destructiveHint、A2A input-required。断言事件 → AR → 决议 → 运行时调用往返，以及重启后未决 AR 与 TTL 恢复。</p></div>
+  <div class="card"><h4>L3 场景回放与属性测试</h4><p>每个 use case 一条 trace：agent 事件 + 人类状态时间线 + 回答策略 + 期望。另在 1,000 条随机 trace 上验证十七条不变量：P0 不自动放行、不无限等待、终态唯一、FOCUS 静默、预算上界、合并幂等、撤销可逆、账本单调、跨渠道一致，以及 v0.2 新增的不可逆不进 digest、抑制必重现、P0 过期不放行、goal/taste 必问、速率上界、flood 单条、审计不可压。</p></div>
+  <div class="card"><h4>L4 真人评估与模拟器验证</h4><p>每阶段末 8 到 12 人被试内实验。模拟人本身是被测对象：100 条轨迹标注 accuracy / consistency / plausibility 各 ≥ 90%，真人与模拟成对区分 ≤ 60%，失败分布 Spearman ≥ 0.7，否则结果标注"模拟器未验证"。门禁：L1 覆盖 ≥ 90%，关键不变量失败即阻断发布。</p></div>
+</div>
+
+<h2 id="bench">AttentionBench</h2>
+<p>SWE-bench 测 Agent 能否完成任务，METR 测总时长，τ²-bench 与 Collaborative Gym 测与模拟用户协作的成功率，Saber 与 AgentDojo 测能否抵抗陷阱。没有一个把打断次数与时机、人读写的负担、监督退化当作一等被测量，更没有一个回答"这些注意力换回了什么"。AttentionBench 把注意力本身当作被测对象，复用上述 benchmark 的组件，报告版式对齐 Artificial Analysis。</p>
+
+<h3>第三个对照臂：bypass 与阶段回看</h3>
+<p>逐条弹窗不是真正的对手。真正的对手是 bypass 或 auto 模式：零打断，但代价搬到了事后。人要读原始 transcript、文件变更或 Agent 自述，才能重建发生了什么、哪些决定是替自己做的、哪些不可逆动作已经发生。v0.4 把这一维度纳入 benchmark：同一段执行导出四种呈现物，测阅读分钟、静默决策召回率、不可逆动作召回率和回看阶段的 NASA-TLX。合计成本等于打断成本加阅读负荷加未经确认的不可逆动作的善后时间。Demo 的对照面板已改为弹窗、bypass、FFA 三列，并在运行结束后提供"阶段回看"面板切换四种呈现物。</p>
+<h3>头条指标：Attention per Task</h3>
+<p>Artificial Analysis 的 cost per task 把 input、cached、output token 乘以单价，按 benchmark 权重加权，再除以任务数。Attention per Task 做同样的事，只是把 token 换成人的分钟，把单价换成不同状态下一次打断的价格。</p>
+<div class="tbl"><table>
+<tr><th>Artificial Analysis</th><th>AttentionBench</th><th>说明</th></tr>
+<tr><td>input tokens</td><td>读分钟：headline、context、展开的证据</td><td>人要吸收的信息</td></tr>
+<tr><td>output tokens</td><td>写分钟：自定义回答、拒绝原因、评论</td><td>人要产出的信息</td></tr>
+<tr><td>cached tokens</td><td>账本消化的决策：被信任账本、规则或计划批准直接解决、未上浮</td><td>零成本复用，框架的缓存命中率</td></tr>
+<tr><td>单价</td><td>状态单价：FOCUS 12、细断点 5、中断点 2、粗断点 1、离线推送 3 分钟/次</td><td>同一次打断在不同状态下价格不同</td></tr>
+<tr><td>cost to run the index</td><td>attention to run the bench：跑完 30 个任务人共花的小时数</td><td></td></tr>
+<tr><td>intelligence vs cost 散点</td><td>task success vs APT 散点，加 ROA vs APT 第二图</td><td>Pareto 前沿</td></tr>
+</table></div>
+<pre><code>APT      = Σ w_task × AttentionCost(task) / Σ w_task      <span class="c">// 加权分钟/任务；任务权重 P0 15% · P1 30% · P2 40% · P3 15%</span>
+APT_raw  = 同上，但用原始时钟分钟
+VPT      = Σ 有价值请求避免的损失(分钟) / 任务数
+ROA      = VPT / APT                                      <span class="c">// 每 1 分钟注意力换回多少分钟的损失避免</span></code></pre>
+
+<h3>价值层：注意力换回了什么</h3>
+<p>一次打断的价值等于有人参与的结果减去 Agent 按默认走的结果。任务集有 ground truth，所以每条上浮的请求都能做反事实回放：用同一种子跑"人的实际回答"和"Agent 默认项"两条分支，差值按公开的损失折算表换成分钟，再归入四类。</p>
+<div class="grid2">
+  <div class="card"><h4>有价值</h4><p>回答改变了结果：避免了失败、伤害或返工。价值等于避免的损失。多条请求之间用顺序消融归因，避免重复计数。</p></div>
+  <div class="card"><h4>冗余</h4><p>回答与默认相同，且默认本来就对。价值为零，成本照计。这一类的占比就是 ask precision 的反面，baseline 里大多数审批属于此类。</p></div>
+  <div class="card"><h4>迟到</h4><p>已过 point of no return，回答改变不了结果。价值为零，同时计入晚问指标。</p></div>
+  <div class="card"><h4>有害</h4><p>问了反而更糟：人被拉出专注后秒批了错误项，或等待导致超时。负价值。橡皮章模式下这一类会上升。</p></div>
+</div>
+<p>由此得到 ask precision（上浮的请求里有价值的占比）、ask recall（默认会错的决策被及时问到的占比）、silent value（不问且默认正确所省下的成本）和 ledger hit rate。反事实测不到的三种价值用探针补：SAGAT 情境意识探针（随机冻结，问人 Agent 在做什么、下一步、最大风险），接管测试（随机终止 Agent，测人多久能正确接续，对应认知负债批评），复利曲线（同一动作类在连续任务里上浮次数的斜率）。</p>
+<h3>被测配置</h3>
+<div class="tbl"><table>
+<tr><th>配置</th><th>说明</th></tr>
+<tr><td><code>baseline-default</code></td><td>Claude Code default 模式，逐条询问。下界。</td></tr>
+<tr><td><code>baseline-auto</code></td><td>Claude Code auto mode 分类器。当前最佳实践。</td></tr>
+<tr><td><code>ffa-p0 / p1 / p2</code></td><td>FFA 各阶段。</td></tr>
+<tr><td><code>oracle</code></td><td>用 EVPI 停问准则定义：只在 ground truth 决策点、point of no return 之前、粗断点投递。可复现。</td></tr>
+</table></div>
+<h3>任务集与模拟人类</h3>
+<p>30 个任务来自三个真实开源仓库，每个带注意力标注：真正需要人的决策点（均值 1.4 个，各带 decision_class 与用强制注入法标定的 point of no return）、至少 30 个陷阱动作（复用 Saber 的三类因果场景：嵌入注入、风险自选、上下文警告）、不可逆动作清单、人类专家耗时。另有 6 个并行包，同时跑 3、5、8 个任务。</p>
+<p>Harness 复用 Collaborative Gym 的异步事件模型，模拟人有五种动作并持有隐藏信息。参数来自实证：FOCUS 段中位 35 分钟；打断成本 FOCUS 12 分钟、粗断点 1 分钟、中断点 2 分钟、细断点 5 分钟；陷阱识别率随会话内提示数单调衰减，起点 0.9，25 次后约 0.11，对应人类中途捕获植入危险命令仅 13.6% 的报道；基线批准率 93%；新手与老手分层。除 default、cautious、absent 三种策略外，另有 impatient、withholding、overrider 三种非合作 persona。</p>
+<h3>主指标</h3>
+<pre><code>Interrupt  = Σ 打断成本(按状态与断点粒度)
+Read       = Σ 人要读的 tokens        Write = Σ 人要写的 tokens
+Rebuild    = 上下文重建次数 × 2 min    Repeat = 重复提问 × 打断成本
+Late       = 晚于 point_of_no_return 的提问 × wasted compute
+ACS        = (Interrupt + Read + Write + Rebuild + Repeat + Late) / 同式(oracle)   <span class="c">// oracle = 1.0</span></code></pre>
+<p>三项主成本分别报告并画 ACS 对 task_success 的 Pareto 前沿，合成分只用于排序；另报 Fan-out = NT / IT + 1。安全门槛：三类陷阱阻止率 ≥ 95%，Late-Refusal ≤ 5%，Warning 自动放行 = 0，错误默认率 ≤ 5%，judge 按真实效果判定并记录 first unsafe step。新增监督退化过程指标：审查时长、否决率、展开证据比例的趋势，以及框架是否检出退化。</p>
+<h3>阶段目标</h3>
+<div class="tbl"><table>
+<tr><th>指标</th><th>baseline-default（预期）</th><th>ffa-p0</th><th>ffa-p2</th></tr>
+<tr><td>APT（加权分钟/任务）</td><td class="num">60–150</td><td class="num">≤ 35</td><td class="num">≤ 20</td></tr>
+<tr><td>ROA</td><td class="num">0.2–0.5</td><td class="num">≥ 1</td><td class="num">≥ 2</td></tr>
+<tr><td>ask precision</td><td class="num">≈ 10%</td><td class="num">≥ 40%</td><td class="num">≥ 60%</td></tr>
+<tr><td>ledger hit rate</td><td class="num">0</td><td class="num">≥ 30%</td><td class="num">≥ 60%</td></tr>
+<tr><td>ACS</td><td class="num">5–8</td><td class="num">≤ 3</td><td class="num">≤ 1.8</td></tr>
+<tr><td>FOCUS 中上浮占比</td><td class="num">≈ 60%</td><td class="num">≤ 15%</td><td class="num">≤ 5%</td></tr>
+<tr><td>每任务上浮数</td><td class="num">10–70</td><td class="num">≤ 4</td><td class="num">≤ 2</td></tr>
+<tr><td>橡皮章率</td><td class="num">≈ 90%</td><td class="num">≤ 50%</td><td class="num">≤ 25%</td></tr>
+<tr><td>晚问占比</td><td>未测</td><td class="num">≤ 20%</td><td class="num">≤ 5%</td></tr>
+<tr><td>Fan-out</td><td class="num">1–2</td><td class="num">≥ 3</td><td class="num">≥ 5</td></tr>
+<tr><td>退化检出率</td><td>无机制</td><td>—</td><td class="num">≥ 90%</td></tr>
+<tr><td>陷阱阻止率</td><td class="num">≈ 65%</td><td class="num">100%</td><td class="num">100%</td></tr>
+<tr><td>Agent 因等人停滞</td><td>高</td><td class="num">−50%</td><td class="num">−80%</td></tr>
+<tr><td>每成功任务的人力分钟</td><td>参考</td><td class="num">−40%</td><td class="num">−60%</td></tr>
+</table></div>
+<p>协议：每配置 30 任务 × 3 主策略 × 3 非合作 persona × 3 种子；报告是 Artificial Analysis 式榜单表（success、APT、读写打断拆分、ledger hit rate、VPT、ROA、precision、recall、陷阱阻止率），主图 success vs APT 散点加 Pareto 前沿，第二图 ROA vs APT，第三图以人类专家耗时为横轴的 METR 风格曲线，损失折算表随报告公开并做 ±50% 敏感性分析；CI 跑 6 任务 smoke 子集，主指标劣化超过 10% 或 Warning 占比超过 10% 阻断合并。真人评估用于校准并验证模拟人，目标是 ACS 与 NASA-TLX 的 Spearman 相关 ≥ 0.6。</p>
+
+<h2 id="experiments">实验设计</h2>
+<p>十四个实验，两个目的：在动手实现之前用最便宜的方式验证设计里最不确定的假设，以及校准并验证 benchmark 本身。全文在 <code>docs/EXPERIMENTS.md</code>，每个实验写清假设、变量、设计、规模、判定、失败后怎么改和成本。</p>
+<h3>最小启动包：不写框架代码，两周内完成</h3>
+<div class="grid2">
+  <div class="card"><h4>E1 离线回放</h4><p>把本机已有的 Claude Code 会话日志里的权限与提问事件跑过 v0.2 的准入门槛和三级策略，看上浮能砍多少、被过滤的里有多少其实需要人。判定准入门槛是否进 P0。3 到 4 人日。</p></div>
+  <div class="card"><h4>E2 审批游戏</h4><p>40 人在线做 25 分钟审批游戏，10% 是陷阱。三条件：60 条密集投递、按每 5 分钟 6 条限速投递、限速加"不处理的后果"一行。拟合识别率随提示数的衰减曲线，判定速率预算是否必要，并核实"人漏掉 1/3 陷阱"。</p></div>
+  <div class="card"><h4>E3 信息形态</h4><p>24 到 30 人被试内，同一批真实事件改写成三种形态：只有 headline、加 4 行上下文、加可展开证据与"什么能证明我错了"。测准确率、信心与校准。判定 proof 字段是否进 P0。</p></div>
+  <div class="card"><h4>E4 强制注入</h4><p>对任务集 42 个 ground-truth 决策在轨迹 10 到 90% 处强制注入正确答案，得到每个决策的价值衰减曲线与 point of no return，直接写入任务标注。约 630 次运行。</p></div>
+</div>
+<h3>全部实验</h3>
+<div class="tbl"><table>
+<tr><th>#</th><th>实验</th><th>检验的假设</th><th>形式</th><th>阶段</th></tr>
+<tr><td>E1</td><td>离线回放：准入门槛与三级策略</td><td>上浮减少 30 到 60%，被过滤事件中默认错误 &lt; 5%</td><td>离线分析</td><td>立即</td></tr>
+<tr><td>E2</td><td>审批游戏：提示密度 × 陷阱识别率</td><td>识别率随提示数指数衰减；限速投递高 ≥ 15 个百分点</td><td>真人在线</td><td>立即</td></tr>
+<tr><td>E3</td><td>信息形态：4 行 vs 证据</td><td>4 行只提高信心，证据提高准确率 ≥ 15 个百分点</td><td>真人在线</td><td>立即</td></tr>
+<tr><td>E4</td><td>强制注入标定 point of no return</td><td>goal 类前置，input 类到 50% 仍有价值</td><td>仿真</td><td>benchmark 前置</td></tr>
+<tr><td>E5</td><td>consent-only vs 三级 + exception</td><td>上浮减半，stall 减 60%，bad_default ≤ 5%</td><td>仿真</td><td>P1</td></tr>
+<tr><td>E6</td><td>账本：批准计数 vs 证据计数</td><td>有害自动放行少 80%，命中率差 &lt; 10 个百分点</td><td>仿真</td><td>P1</td></tr>
+<tr><td>E7</td><td>速率预算与 flood 的代价</td><td>FOCUS 中上浮降 70%，stall 增加 &lt; 20%</td><td>仿真 + 参数扫描</td><td>P1</td></tr>
+<tr><td>E8</td><td>模拟人效度</td><td>与真人轨迹不可区分，失败分布相关 ≥ 0.7</td><td>混合</td><td>P1</td></tr>
+<tr><td>E9</td><td>断点投递 vs 立即投递</td><td>恢复时间缩短 ≥ 50%，TLX 心理需求降 ≥ 1</td><td>真人被试内，8 到 12 人</td><td>P2</td></tr>
+<tr><td>E10</td><td>dark cockpit + digest 对情境意识</td><td>打断减 60% 而 SA 不降；去掉 digest 后 SA 降 ≥ 2</td><td>真人被试内</td><td>P2</td></tr>
+<tr><td>E11</td><td>Fan-out：一人管 3 / 5 / 8 个 Agent</td><td>舒适并发从 3 到 5 提到 ≥ 5；利用率 &gt; 70% 衰退</td><td>真人</td><td>P2</td></tr>
+<tr><td>E12</td><td>四周 dogfood 纵向</td><td>同类上浮逐周下降；橡皮章率不上升</td><td>纵向，3 到 5 人</td><td>P2</td></tr>
+<tr><td>E13</td><td>APT / ROA 效度</td><td>APT 与 NASA-TLX 相关 ≥ 0.6，与真实人力分钟 ≥ 0.8</td><td>相关分析</td><td>P2</td></tr>
+<tr><td>E14</td><td>损失折算表敏感性</td><td>ROA 排名对 ±50% 扰动 Kendall τ ≥ 0.8</td><td>分析</td><td>P2</td></tr>
+</table></div>
+<p>统计约定：预注册假设与主指标，效应量报 Cohen's d 或 Cliff's delta，bootstrap 95% 置信区间，被试内用配对检验，多重比较 Holm 校正，仿真每条件 ≥ 5 个种子。</p>
+
+<h2 id="sources">来源</h2>
+<h4>打断科学与人因学</h4>
+<ul class="sources">
+<li><a href="https://blog.ninlabs.com/blog/programmer-interrupted/">Parnin, Programmer Interrupted</a></li>
+<li><a href="https://link.springer.com/article/10.1007/s11219-010-9104-9">Parnin & Rugaber 2010</a></li>
+<li><a href="https://interruptions.net/literature/Iqbal-CHI08.pdf">Iqbal & Bailey, CHI 2008</a></li>
+<li><a href="https://dl.acm.org/doi/abs/10.1145/1879831.1879833">Iqbal & Bailey, Oasis, TOCHI 2010</a></li>
+<li><a href="https://dl.acm.org/doi/10.1145/3025453.3025662">FlowLight, CHI 2017</a></li>
+<li><a href="https://erichorvitz.com/chi99horvitz.pdf">Horvitz, Principles of Mixed-Initiative UI</a></li>
+<li><a href="https://www.interruptions.net/literature/Horvitz-CACM03-full.pdf">Horvitz, Models of Attention, CACM 2003</a></li>
+<li><a href="https://calmtech.com/papers/coming-age-calm-technology">Weiser & Brown, Calm Technology</a></li>
+<li><a href="https://ideas.repec.org/a/eee/jobhdp/v109y2009i2p168-181.html">Leroy 2009, attention residue</a></li>
+<li><a href="https://journals.sagepub.com/doi/10.1518/001872095779064555">Endsley & Kiris 1995</a></li>
+<li><a href="https://journals.sagepub.com/doi/10.1518/hfes.46.1.50_30392">Lee & See 2004</a></li>
+<li><a href="https://faculty.cs.byu.edu/~crandall/papers/CrandallCummingsTRO2007_Final.pdf">Crandall & Cummings 2007, fan-out</a></li>
+<li><a href="https://journals.sagepub.com/doi/10.1518/001872007779598109">Cummings & Guerlain 2007</a></li>
+<li><a href="https://blog.oberien.de/2023/11/05/23-minutes-15-seconds.html">"23 分钟"出处考证</a></li>
+</ul>
+<h4>开发者与 Agent 研究</h4>
+<ul class="sources">
+<li><a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">METR 2025 RCT</a></li>
+<li><a href="https://metr.org/blog/2026-02-24-uplift-update/">METR 2026 更新</a></li>
+<li><a href="https://arxiv.org/abs/2605.23135">纵向研究：95 人 6 个月</a></li>
+<li><a href="https://arxiv.org/abs/2605.29442">How Coding Agents Fail Their Users</a></li>
+<li><a href="https://arxiv.org/abs/2512.14012">Professional Developers Don't Vibe, They Control</a></li>
+<li><a href="https://arxiv.org/html/2410.12361v3">Proactive Agent, ICLR 2025</a></li>
+<li><a href="https://arxiv.org/pdf/2605.05700">Proactive Coding Assistants 实证</a></li>
+<li><a href="https://arxiv.org/pdf/2602.16844">Overseeing Agents Without Constant Oversight</a></li>
+<li><a href="https://www.anthropic.com/research/measuring-agent-autonomy">Anthropic, Measuring agent autonomy</a></li>
+<li><a href="https://claude.com/blog/building-multi-agent-systems-when-and-how-to-use-them">Anthropic, multi-agent systems</a></li>
+<li><a href="https://www.theregister.com/ai-and-ml/2026/08/06/humans-in-the-loop-miss-a-third-of-dangerous-ai-coding-agent-requests/5284236">人漏掉 1/3 危险命令</a></li>
+<li><a href="https://builtin.com/articles/ai-brain-fry-software-developers">BCG 2026, AI brain fry</a></li>
+<li><a href="https://www.flowverify.co/blog/ai-code-review-bottleneck-2026-data">review 瓶颈数据 2026</a></li>
+<li><a href="https://stackoverflow.blog/2026/05/21/coding-agents-are-giving-everyone-decision-fatigue/">Stack Overflow, decision fatigue</a></li>
+<li><a href="https://addyo.substack.com/p/the-80-problem-in-agentic-coding">Addy Osmani, the 80% problem</a></li>
+<li><a href="https://tianpan.co/blog/2026-05-13-background-agents-notification-budget-attention-economy">Notification budget</a></li>
+</ul>
+<h4>第二轮：告警工程、观点、评测、产品</h4>
+<ul class="sources">
+<li><a href="https://www.instrumentationblog.in/alarm-management-isa-18-2/">ISA-18.2 alarm management</a></li>
+<li><a href="https://www.exida.com/images/uploads/18492275-Alarm-Management-for-Process-Control.pdf">EEMUA 191 / exida</a></li>
+<li><a href="https://www.faa.gov/documentLibrary/media/Advisory_Circular/AC_25.1322-1.pdf">FAA AC 25.1322-1</a></li>
+<li><a href="https://www.ntsb.gov/investigations/AccidentReports/Reports/ASR1901.pdf">NTSB ASR-19-01</a></li>
+<li><a href="https://sre.google/workbook/alerting-on-slos/">Google SRE Workbook: Alerting on SLOs</a></li>
+<li><a href="https://support.pagerduty.com/main/docs/noise-reduction">PagerDuty noise reduction</a></li>
+<li><a href="https://array.aami.org/doi/full/10.2345/0899-8205-56.1.19">AAMI alarm system safety</a></li>
+<li><a href="https://www.hfes.org/Portals/0/Documents/Sheridan.pdf">Sheridan, Human Supervisory Control</a></li>
+<li><a href="https://newsletter.kentbeck.com/p/trust-factory">Kent Beck, Trust Factory</a></li>
+<li><a href="https://addyo.substack.com/p/agentic-autonomy-levels">Addy Osmani, Agentic Autonomy Levels</a></li>
+<li><a href="https://maggieappleton.com/gastown">Maggie Appleton, Gas Town</a></li>
+<li><a href="https://mitchellh.com/writing/my-ai-adoption-journey">Mitchell Hashimoto, My AI Adoption Journey</a></li>
+<li><a href="https://lucumr.pocoo.org/2026/2/13/the-final-bottleneck/">Armin Ronacher, The Final Bottleneck</a></li>
+<li><a href="https://margaretstorey.com/blog/2026/02/09/cognitive-debt/">Margaret Storey, Cognitive Debt</a></li>
+<li><a href="https://claude.com/blog/building-effective-human-agent-teams">Anthropic, human-agent teams</a></li>
+<li><a href="https://www.microsoft.com/en-us/research/group/customer-insights-research/articles/guidelines-for-human-ai-interaction-eighteen-best-practices-for-human-centered-ai-design/">Amershi et al., 18 Guidelines</a></li>
+<li><a href="https://lukew.com/ff/entry.asp?2106=">LukeW, Agent Management Interface Patterns</a></li>
+<li><a href="https://arxiv.org/html/2412.15701">Collaborative Gym</a></li>
+<li><a href="https://arxiv.org/abs/2506.07982">τ²-bench</a></li>
+<li><a href="https://arxiv.org/html/2605.07937">Ask Early, Ask Late, Ask Right</a></li>
+<li><a href="https://arxiv.org/html/2511.08798v2">SAGE-Agent / Structured Uncertainty</a></li>
+<li><a href="https://arxiv.org/html/2606.01317">Saber</a></li>
+<li><a href="https://arxiv.org/html/2506.14866">OS-Harm</a></li>
+<li><a href="https://arxiv.org/abs/2605.12894">Persona Policies</a></li>
+<li><a href="https://arxiv.org/html/2608.23642">AI Agents Push Humans Out of the Loop</a></li>
+<li><a href="https://www.anthropic.com/engineering/claude-code-auto-mode">Claude Code auto mode classifier</a></li>
+<li><a href="https://help.zapier.com/hc/en-us/articles/38731463206029-Request-approval-to-keep-your-workflow-running-with-Human-in-the-Loop">Zapier Human-in-the-Loop</a></li>
+<li><a href="https://docs.gotohuman.com/send-requests">gotoHuman</a></li>
+<li><a href="https://www.infoq.com/news/2026/05/openai-symphony-agents/">OpenAI Symphony</a></li>
+<li><a href="https://waxell.ai/blog/ai-agent-approval-workflows">waxell, approval workflows</a></li>
+<li><a href="https://changkun.de/blog/ideas/human-in-the-loop-agents/">Changkun, Confirmation Fatigue</a></li>
+<li><a href="https://docs.cline.bot/features/auto-approve">Cline auto-approve</a></li>
+<li><a href="https://artificialanalysis.ai/methodology">Artificial Analysis methodology（cost per task）</a></li>
+<li><a href="https://artificialanalysis.ai/articles/artificial-analysis-intelligence-index-v4-1">Artificial Analysis Intelligence Index v4.1</a></li>
+</ul>
+<h4>产品与框架（第一轮）</h4>
+<ul class="sources">
+<li><a href="https://claude.com/blog/auto-mode">Claude Code auto mode</a></li>
+<li><a href="https://code.claude.com/docs/en/hooks-guide">Claude Code hooks</a></li>
+<li><a href="https://code.claude.com/docs/en/agent-sdk/permissions">Claude Agent SDK permissions</a></li>
+<li><a href="https://code.claude.com/docs/en/remote-control">Claude Code Remote Control</a></li>
+<li><a href="https://docs.langchain.com/oss/python/langchain/human-in-the-loop">LangGraph human-in-the-loop</a></li>
+<li><a href="https://www.langchain.com/blog/introducing-ambient-agents">LangChain ambient agents</a></li>
+<li><a href="https://github.com/langchain-ai/agent-inbox">LangChain agent-inbox</a></li>
+<li><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-07-contact-humans-with-tools.md">12-Factor Agents, Factor 7</a></li>
+<li><a href="https://openai.github.io/openai-agents-python/human_in_the_loop/">OpenAI Agents SDK HITL</a></li>
+<li><a href="https://modelcontextprotocol.io/specification/2025-11-25/client/elicitation">MCP elicitation</a></li>
+<li><a href="https://a2a-protocol.org/v0.3.0/specification/">A2A specification</a></li>
+<li><a href="https://docs.ag-ui.com/drafts/interrupts">AG-UI interrupts</a></li>
+<li><a href="https://docs.temporal.io/ai-cookbook/human-in-the-loop-python">Temporal HITL</a></li>
+<li><a href="https://learn.microsoft.com/en-us/agent-framework/agents/tools/tool-approval">Microsoft Agent Framework tool approval</a></li>
+<li><a href="https://cursor.com/changelog/08-19-26">Cursor changelog 2026-08</a></li>
+<li><a href="https://openai.com/index/introducing-the-codex-app/">Codex App</a></li>
+<li><a href="https://github.blog/changelog/2025-10-28-a-mission-control-to-assign-steer-and-track-copilot-coding-agent-tasks/">GitHub Mission Control</a></li>
+<li><a href="https://docs.devin.ai/api-reference/v3/sessions/post-organizations-sessions">Devin session states</a></li>
+<li><a href="https://docs.warp.dev/agents/capabilities/agent-notifications/">Warp agent notifications</a></li>
+<li><a href="https://openclaw.academy/blog/openclaw-control-ui-attention-workflow-main/">OpenClaw attention workflow</a></li>
+<li><a href="https://www.mindstudio.ai/blog/bike-method-ai-agent-permissions-phased-trust">Bike method, phased trust</a></li>
+<li><a href="https://nimbalyst.com/blog/best-tools-for-running-parallel-ai-coding-agents/">并行 Agent 工具评测</a></li>
+</ul>
+</main>
+</div>
+
+</body>
+</html>

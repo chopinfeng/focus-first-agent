@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>界面规范 · Focus-First Agent</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--ground:#F5F6F4;--surface:#FFFFFF;--sunken:#EAEEEC;--ink:#1B2421;--muted:#62706B;--line:#D7DDDA;--amber:#C4700F;--amber-soft:#F6E5CF;--done:#2F7A4E}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ground:#101715;--surface:#182120;--sunken:#141C1A;--ink:#E4EBE8;--muted:#93A39E;--line:#2A3634;--amber:#E39A3F;--amber-soft:#3A2A14;--done:#6CC08B}}
+*{box-sizing:border-box}body{margin:0;background:var(--ground);color:var(--ink);font:15.5px/1.8 "IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--amber);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--amber) 40%,transparent)}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 20px 80px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;align-items:start}
+.side{position:sticky;top:20px;font-size:13px;line-height:1.5}.side .eyebrow{font:700 11px/1 "Manrope",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.side ol{list-style:none;margin:0;padding:0;border-left:1px solid var(--line)}.side a{display:block;padding:5px 0 5px 14px;color:var(--muted);border:0;margin-left:-1px;border-left:2px solid transparent}.side a.on{color:var(--ink);border-left-color:var(--amber)}
+main{max-width:78ch;min-width:0}
+h1{font:800 32px/1.2 "Manrope","PingFang SC",sans-serif;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}h2{font:700 22px/1.3 "Manrope","PingFang SC",sans-serif;margin:48px 0 12px;padding-top:20px;border-top:1px solid var(--line)}h3{font:700 17px/1.35 "Manrope","PingFang SC",sans-serif;margin:28px 0 8px}h4{font:600 15px/1.4 "Manrope","PingFang SC",sans-serif;margin:18px 0 6px}
+p{margin:10px 0}blockquote{margin:16px 0;padding:10px 16px;border-left:3px solid var(--amber);background:var(--amber-soft);color:var(--ink)}
+code{font:.88em "IBM Plex Mono",Menlo,monospace;background:var(--sunken);padding:1px 5px;border-radius:3px}pre{font:12.5px/1.6 "IBM Plex Mono",Menlo,monospace;background:var(--sunken);border:1px solid var(--line);border-radius:4px;padding:14px 16px;overflow:auto}pre code{background:none;padding:0}
+.tbl{overflow-x:auto;margin:12px 0}table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.5}th{font:500 12px/1.4 "IBM Plex Mono",monospace;color:var(--muted);text-align:left;padding:8px 10px 8px 0;border-bottom:2px solid var(--line)}td{padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+img{max-width:100%;height:auto;border:1px solid var(--line);border-radius:6px;display:block;margin:14px 0}hr{border:0;border-top:1px solid var(--line);margin:36px 0}
+.meta{font:12px/1.5 "IBM Plex Mono",monospace;color:var(--muted);margin-bottom:22px}
+@media (max-width:860px){.wrap{grid-template-columns:1fr;gap:16px}.side{position:static}.side ol{display:flex;flex-wrap:wrap;border:0;gap:4px 12px}.side a{padding:3px 0;border:0}}
+</style>
+</head>
+<body>
+<nav class="site-nav" aria-label="站点"><a class="site-brand" href="index.html"><i></i>Focus-First Agent</a><div class="site-links"><a href="index.html">首页</a><a href="article.html">文章</a><a href="design.html">设计参考</a><a href="docs.html" class=on>文档</a><a href="inbox.html">收件箱原型</a><a href="demo.html">动态演示</a><a href="playground.html">Playground</a><a href="runs.html">运行报告</a><a href="https://github.com/chopinfeng/focus-first-agent" target=_blank rel=noopener>GitHub</a></div></nav>
+<style>.site-nav{display:flex;align-items:center;gap:18px;padding:0 20px;height:42px;background:var(--surface,#fff);border-bottom:1px solid var(--line,#d7ddda);font:13px/1 "IBM Plex Sans","PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif;position:relative;z-index:50}
+.site-brand{display:inline-flex;align-items:center;gap:8px;font-family:"Manrope","PingFang SC",sans-serif;font-weight:800;font-size:13px;color:var(--ink,#1b2421);text-decoration:none;border:0;white-space:nowrap}
+.site-brand i{width:8px;height:8px;border-radius:50%;background:var(--amber,var(--needs,#c4700f));display:inline-block}
+.site-links{display:flex;gap:2px;margin-left:auto;overflow-x:auto}
+.site-links a{padding:6px 9px;border-radius:4px;color:var(--muted,#62706b);text-decoration:none;border:0;white-space:nowrap}
+.site-links a:hover{color:var(--ink,#1b2421)}.site-links a.on{background:var(--sunken,#eaeeec);color:var(--ink,#1b2421);font-weight:500}
+@media (max-width:640px){.site-nav{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px}.site-links{margin-left:0}}</style>
+
+<div class="wrap"><aside class="side"><div class="eyebrow">文档</div><ol><li><a href="doc-DESIGN.html">设计 v0.2</a></li><li><a href="doc-RESEARCH.html">调研综合</a></li><li><a href="doc-CHANGELOG-v0.2.html">v0.1 → v0.2 决策</a></li><li><a href="doc-USE-CASES.html">Use case</a></li><li><a href="doc-UI-UX.html" class=on>界面规范</a></li><li><a href="doc-TESTING.html">测试方案</a></li><li><a href="doc-BENCHMARK.html">AttentionBench</a></li><li><a href="doc-EXPERIMENTS.html">实验设计</a></li></ol><div class="eyebrow" style="margin-top:18px">原始调研</div><ol><li><a href="doc-01-hci-interruption-science.html">hci interruption science</a></li><li><a href="doc-02-agent-products.html">agent products</a></li><li><a href="doc-03-hitl-frameworks-protocols.html">hitl frameworks protocols</a></li><li><a href="doc-04-multi-agent-ambient.html">multi agent ambient</a></li><li><a href="doc-05-cross-domain-alerting.html">cross domain alerting</a></li><li><a href="doc-06-opinions-hai-guidelines.html">opinions hai guidelines</a></li><li><a href="doc-07-benchmarks-user-simulators.html">benchmarks user simulators</a></li><li><a href="doc-08-products-round2.html">products round2</a></li></ol></aside><main><div class="meta">源文件 docs/UI-UX.md</div><h1 id="FFA-界面规范-以保护注意力为唯一目标">FFA 界面规范：以保护注意力为唯一目标</h1>
+<blockquote>版本 0.1，2026-09-03。适用于 FFA 的全部呈现面：周边状态、异常收件箱、"已替你决定"队列、digest、自治面板、手机推送、终端状态行。原则来自平静技术、航空告警设计、Amershi 18 条与本项目两轮调研；可点原型见 <code>docs/ui-prototype.html</code>，在线版 <a href="https://claude.ai/code/artifact/e388218d-e893-48f4-bf95-9824704f05f2">https://claude.ai/code/artifact/e388218d-e893-48f4-bf95-9824704f05f2</a> 。</blockquote>
+<h2 id="0-一句话">0. 一句话</h2>
+<p><strong>界面的成功状态是"什么都没有"。</strong> 一个正常运转的 FFA 界面在大多数时间应当是空的、暗的、静止的。任何像素、任何文字、任何动效都要证明它值得人的一次注视。</p>
+<h2 id="1-十条原则">1. 十条原则</h2>
+<div class=tbl><table><tr><th>#</th><th>原则</th><th>含义</th><th>反例</th></tr><tr><td>1</td><td><strong>暗舱（dark cockpit）</strong></td><td>正常即无灯。working 不显示，只有 blocked / needs-you / done 出现</td><td>每个 Agent 一个旋转 spinner、流式输出滚动</td></tr><tr><td>2</td><td><strong>一眼即懂（glanceability）</strong></td><td>周边信息用颜色和位置编码，≤ 1 秒读完，不用文字</td><td>状态栏里写 "Agent 3 is running tests (41/41)…"</td></tr><tr><td>3</td><td><strong>一次一屏，不滚动</strong></td><td>一条决策的全部信息在一屏内；收件箱首屏 ≤ 5 条</td><td>无限列表、折叠再折叠</td></tr><tr><td>4</td><td><strong>决策优先于信息</strong></td><td>首屏只放"要你做什么"和选项，证据在展开层</td><td>先放 diff 再放问题</td></tr><tr><td>5</td><td><strong>单键作答</strong></td><td>每条请求可用 1/2/3 或 y/n 回答；鼠标是次选</td><td>必须点开、滚动、再点确认</td></tr><tr><td>6</td><td><strong>静止</strong></td><td>内容不自动移动、不自动刷新位置；新条目进入不推挤正在读的条目</td><td>列表顶部实时插入、toast 堆叠</td></tr><tr><td>7</td><td><strong>不计数</strong></td><td>没有未读数、红点、"inbox zero" 进度条</td><td>角标 "12"、"你还有 7 条待处理"</td></tr><tr><td>8</td><td><strong>默认无声</strong></td><td>没有声音、没有振动；Warning 也只用一次可确认的提示</td><td>每次完成叮一声</td></tr><tr><td>9</td><td><strong>说明代价</strong></td><td>每条请求显示阅读预估、不答会怎样、剩余时间</td><td>只有 "Approve / Deny"</td></tr><tr><td>10</td><td><strong>可关的一切都可关</strong></td><td>抑制、snooze、降级都是一键；被抑制的东西可见但不打扰</td><td>关掉通知就完全失联</td></tr></table></div>
+<h2 id="2-界面的注意力预算">2. 界面的注意力预算</h2>
+<p>界面本身也有预算，和内核的预算一样可度量：</p>
+<div class=tbl><table><tr><th>预算</th><th>上限</th><th>度量</th></tr><tr><td>周边状态每次注视</td><td>≤ 1 秒读完</td><td>眼动或自评</td></tr><tr><td>收件箱一条的首屏阅读</td><td>≤ 20 秒，≤ 60 个汉字 + 3 个选项</td><td>字数统计 + 停留时间</td></tr><tr><td>收件箱首屏条数</td><td>≤ 5 条，其余折叠为"另有 N 条 Advisory"</td><td>布局约束</td></tr><tr><td>从打开到第一次决策</td><td>中位 ≤ 90 秒</td><td>time_to_first_decision</td></tr><tr><td>决策所需滚动</td><td>0</td><td>scroll depth</td></tr><tr><td>digest 一屏</td><td>≤ 25 行</td><td>渲染约束</td></tr><tr><td>动效</td><td>仅状态变化时一次，≤ 200 ms，尊重 reduced-motion</td><td>代码审查</td></tr><tr><td>颜色</td><td>一个强调色（needs-you），语义色只有黄 / 橙 / 绿 / 红四个</td><td>设计 token</td></tr></table></div>
+<h2 id="3-逐个呈现面">3. 逐个呈现面</h2>
+<h3 id="3-1-周边状态-菜单栏-终端状态行-IDE-状态栏-">3.1 周边状态（菜单栏 / 终端状态行 / IDE 状态栏）</h3>
+<ul><li>形态：每个 Agent 一个 8 px 圆点，无文字。全部正常时整个区域为空或只有一个极淡的占位。</li><li>编码：黄 = blocked（等环境或等验证），橙 = needs-you（有 Caution 及以上等你），绿 = done（有证据包待看），灰点 = 已抑制/已 snooze（独立可见，不许显示为正常）。</li><li>橙点允许一次 2 秒的呼吸动画，之后静止。红只用于 Warning，且伴随一次可确认提示。</li><li>悬停才显示 Agent 名和一行 headline；点击直达收件箱对应条目（deep link）。</li><li>专注模式下状态区显示"已抑制 N"的灰色数字，这是唯一允许的计数。</li></ul>
+<h3 id="3-2-异常收件箱">3.2 异常收件箱</h3>
+<ul><li><strong>排序</strong>：Warning → Caution（按 point of no return / TTL）→ Advisory（按历史行动概率）。不按时间。</li><li><strong>首屏结构</strong>（一条）：</li><li>级别标签 + 类型 + 决策类别（一行小字）</li><li>headline（≤ 120 字符，写对人的影响）</li><li>四行 context：you_were / i_did / i_need / blast_radius</li><li>why_now 一行</li><li>选项（推荐项高亮，带单键提示与后果）</li><li>底行：不答会怎样 · 剩余 TTL · 预计阅读时间 · 展开证据</li><li><strong>展开层</strong>（点击或按 e）：proof 列表、what_would_prove_me_wrong、diff、transcript 链接。展开不跳转，就地展开，其他条目不动。</li><li><strong>交互</strong>：j/k 移动，1/2/3 选项，e 展开，s snooze（30 min / 到下一个断点 / 到明天），d 降级为 Advisory，f "不该问我"，l "该早点问"。每个键都在界面上可见。</li><li><strong>回答后</strong>：条目淡出 200 ms，位置留白 1 秒后收起，不推挤。不弹 "Approved!" toast。</li><li><strong>空状态</strong>：一句话"没有需要你的事"，加下一次 digest 的时间。这是目标状态，要设计得让人愿意停留 0 秒。</li><li><strong>禁止</strong>：未读数、"全部批准"按钮、"全部已读"按钮、自动刷新插入、把 transcript 当正文。</li></ul>
+<h3 id="3-3-已替你决定-队列">3.3 "已替你决定"队列</h3>
+<ul><li>独立视图，不混进收件箱。每条：做了什么决定、为何没问（why_not_asked）、依据的默认项、一键 undo、剩余可撤销时间。</li><li>按可撤销剩余时间排序，快过期的在上。</li><li>不可逆项永远不会出现在这里（内核保证），界面上要写明这一点，建立信任。</li></ul>
+<h3 id="3-4-Digest">3.4 Digest</h3>
+<ul><li>触发：粗断点或每 30 分钟，作为一条可展开的条目出现在收件箱底部，不推送。</li><li>结构：三段固定顺序。① 需要你的（若有，通常为空，因为已在收件箱）② 已替你决定的 N 项 ③ 进度：每个 Agent 一行，"做了什么 / 下一步 / 风险"。</li><li>按历史行动概率排序，低概率项折叠。≤ 25 行，超出即折叠。</li><li>每条可逆动作带 undo；没有"全部已读"。</li></ul>
+<h3 id="3-5-自治面板">3.5 自治面板</h3>
+<ul><li>一屏：全局 autonomy slider（L0–L5）、各动作类当前等级（可编辑 allowlist）、速率仪表（本小时 N/6）、优先级分布（三色条）、已抑制计数、退化信号（四个指示，正常为空）。</li><li>这是唯一可以出现数字的界面，因为它是设置页而非通知面。默认不打开。</li></ul>
+<h3 id="3-6-手机推送">3.6 手机推送</h3>
+<ul><li>只有 Warning 与 AWAY 状态下的 Caution-now 会到手机。</li><li>正文格式固定：<code>[级别] headline · 推荐：X · 不答：Y · 剩余 Z</code>。不写 "Agent is waiting for your input"。</li><li>通知动作：推荐项、第二选项、"回到桌面处理"。回答后所有渠道 3 秒内同步消失。</li><li>对齐 OS 打断等级：Warning = Time-Sensitive，其余 = Active/Passive。Critical 需人预授权。</li></ul>
+<h3 id="3-7-终端内-Claude-Code-等-">3.7 终端内（Claude Code 等）</h3>
+<ul><li>状态行只放圆点；不在输出流里插入提示文本。</li><li>收件箱用 <code>ffa inbox</code> 打开为全屏 TUI，退出即回到原上下文；不劫持当前会话的输入。</li></ul>
+<h2 id="4-卡片的信息层级-一条-AttentionRequest-的渲染规则-">4. 卡片的信息层级（一条 AttentionRequest 的渲染规则）</h2>
+<pre><code>第一眼（≤ 3 秒）   级别色 + headline
+第二眼（≤ 20 秒）  四行 context + why_now + 选项与后果 + 底行
+主动展开           proof / what_would_prove_me_wrong / diff / transcript</code></pre>
+<p>文字预算：首屏 ≤ 60 个汉字或 120 个英文单词。超出的内容自动移入展开层，并在底行显示"展开 · 约 40 秒"。</p>
+<h2 id="5-视觉-token">5. 视觉 token</h2>
+<ul><li>强调色只有一个：needs-you 的琥珀。品牌色不出现在通知面。</li><li>语义色：黄（blocked）、橙（needs-you）、绿（done）、红（Warning）。Advisory 无色。</li><li>字体：正文系统字体；headline 用稍重的字重而非更大的字号；数字用等宽。</li><li>深浅主题都要设计，深色下降低饱和度，保证橙点在深底上不刺眼。</li><li>图标最少化：级别用文字标签，不用图标猜谜。</li></ul>
+<h2 id="6-反模式清单-评审时逐条对照-">6. 反模式清单（评审时逐条对照）</h2>
+<ol><li>任何形式的未读计数与红点</li><li>自动播放、流式滚动、spinner 常驻</li><li>新内容插入到用户正在读的位置</li><li>需要滚动才能看到选项</li><li>模态弹窗抢焦点</li><li>"全部批准 / 全部已读"</li><li>通知正文不含 headline 与默认项</li><li>声音或振动默认开启</li><li>被抑制的内容完全消失</li><li>把 Agent 的 transcript 当作首屏</li><li>用品牌色或渐变装饰通知面</li><li>空状态用插画或鼓励语填满</li></ol>
+<h2 id="7-如何验证界面本身">7. 如何验证界面本身</h2>
+<ul><li>E3（信息形态）直接测卡片层级；E9/E10 测周边状态与 digest。</li><li>界面级指标：time_to_first_decision、每条停留时间、scroll depth（目标 0）、proof 展开率、误触率（按错键后 5 秒内撤销）、空状态停留时间（目标接近 0）。</li><li>每个新界面元素上线前回答一个问题："去掉它，注意力成本会上升吗？"不能证明就不加。</li></ul>
+<h2 id="8-场景清单-Coding-Agent-需要人介入的-14-种情况与结构化控件">8. 场景清单：Coding Agent 需要人介入的 14 种情况与结构化控件</h2>
+<p>纯文本加"批准 / 拒绝"是最差的交互形态：它把结构化信息压扁成一段话，再让人从话里重建结构。每种介入场景都应有对应的控件，人操作的是结构本身，回答也以结构返回给 Agent（而不是自由文本）。原型的"场景库"视图逐一展示。</p>
+<div class=tbl><table><tr><th>#</th><th>场景</th><th>级别（典型）</th><th>控件</th><th>人操作什么</th><th>返回给 Agent 的结构</th></tr><tr><td>1</td><td>命令审批</td><td>Caution</td><td>选项按钮 + 后果</td><td>1/2/3</td><td><code>{option}</code></td></tr><tr><td>2</td><td>计划批准</td><td>Caution（goal）</td><td>步骤清单，每步 执行 / 到时问我 / 跳过；scope 外步骤标出</td><td>逐步切换后按 1</td><td>`{approved, steps:[do</td><td>ask</td><td>skip]}`</td></tr><tr><td>3</td><td>批量文件写入（合并）</td><td>Caution</td><td>文件复选列表 + 增删行数；scope 外默认不勾</td><td>勾选后按 1</td><td><code>{allowed_paths[]}</code></td></tr><tr><td>4</td><td>新增依赖</td><td>Caution（外部）</td><td>包信息表（license、下载量、传递依赖、体积、CVE、维护）+ 替代列表</td><td>选添加 / 替代 / 不加</td><td><code>{decision, alternative?}</code></td></tr><tr><td>5</td><td>方案二选一</td><td>Caution（taste）</td><td>并排对比卡（改动、风险、耗时、可逆、影响），推荐标记</td><td>点卡或 1/2</td><td><code>{pick}</code></td></tr><tr><td>6</td><td>验证失败升级</td><td>Caution</td><td>失败测试表 + 提示候选按钮</td><td>选提示后 1，或接管</td><td><code>{hint?, takeover?, skip_flaky?}</code></td></tr><tr><td>7</td><td>需要凭据</td><td>Caution</td><td>变量名、用处、设置命令；界面明示"值不要贴在这里"</td><td>本机设好后按 1</td><td><code>{env_set:true}</code> 或 <code>{mock}</code></td></tr><tr><td>8</td><td>合并冲突</td><td>Caution</td><td>每个 hunk 三列（我的 / main / Agent 合并版）点选</td><td>逐 hunk 选后按 1</td><td>`{hunks:[ours</td><td>theirs</td><td>agent]}`</td></tr><tr><td>9</td><td>计划期前置提问</td><td>Caution（goal/input）</td><td>多题单选，推荐项标出，未答按推荐</td><td>逐题点选后按 1</td><td><code>{answers{}, defaults_used[]}</code></td></tr><tr><td>10</td><td>证据包审阅</td><td>Advisory / Caution（架构级）</td><td>做了 / 没做 / verifier / 能证明我错；假设逐条 对 / 错；架构级需理解签字才能合并</td><td>勾假设、签字、按 1</td><td><code>{merge, rejected_assumptions[], signed}</code></td></tr><tr><td>11</td><td>静默过久</td><td>Advisory</td><td>已运行时长 + 最后几行日志</td><td>再等 / 终止 / 看输出</td><td>`{wait</td><td>kill</td><td>show}`</td></tr><tr><td>12</td><td>告警洪水折叠</td><td>Advisory</td><td>按 batch_key 分组计数表</td><td>暂停 / 逐条 / 按默认</td><td>`{pause</td><td>expand</td><td>defaults}`</td></tr><tr><td>13</td><td>对外副作用</td><td>Warning</td><td>收件方 + 逐字正文预览；发送键需按两次</td><td>确认两次</td><td><code>{send, body}</code></td></tr><tr><td>14</td><td>环境前置清单</td><td>Caution</td><td>你要做的事复选 + 命令；全勾选前"继续"不可用</td><td>做完勾选后按 1</td><td><code>{done[]}</code></td></tr></table></div>
+<p>设计规则：</p>
+<ul><li>控件内的选择（勾选、切换、点卡）不触发提交；只有底部 1/2/3 主动作才提交，避免误触。</li><li>主动作在前置条件不满足时禁用而非报错（架构级未签字、清单未做完、对外发送未二次确认）。</li><li>每种控件都保留同一套外壳：级别、headline、四行上下文、为何现在问、底行（阅读预估、TTL、展开证据、snooze、反馈）。</li><li>凭据永远不经过界面；对外副作用永远逐字预览；不可逆动作永远不进 digest。</li></ul></main></div>
+<script>(function(){var as=[...document.querySelectorAll('.side a[href^="#"]')];var hs=as.map(function(a){return document.getElementById(a.getAttribute('href').slice(1))});if(!('IntersectionObserver' in window))return;var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){var i=hs.indexOf(e.target);as.forEach(function(a,j){a.classList.toggle('on',j===i)})}})},{rootMargin:'-20% 0px -70% 0px'});hs.forEach(function(h){h&&io.observe(h)})})();</script>
+</body>
+</html>
